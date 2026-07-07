@@ -52,26 +52,26 @@
 
 ## 6. Production deploy (Railway)
 
-- [ ] 6.1 Create Railway project: app service from Dockerfile, managed MySQL,
+- [x] 6.1 Create Railway project: app service from Dockerfile, managed MySQL,
       Volume for future attachments; set env vars (`DATABASE_URL`, `PORT`,
       volume path); healthcheck path `/api/health` (design D7)
 - [ ] 6.2 Enable daily backups on the Railway MySQL service (NFR-REL-01)
-- [ ] 6.3 Deploy and verify on the prod URL: SPA renders, `/api/health` is
+- [x] 6.3 Deploy and verify on the prod URL: SPA renders, `/api/health` is
       `200` with `db:"up"`
 
 ## 7. Slice DoD (fixed order per openspec/config.yaml)
 
 - [ ] 7.1 All task checkboxes above are `[x]`
-- [ ] 7.2 `npm run verify` passes (format, lint, typecheck, fallow audit,
+- [x] 7.2 `npm run verify` passes (format, lint, typecheck, fallow audit,
       openspec validate, tests, build)
-- [ ] 7.3 Smoke test on a real DB: baseline migration applies on a clean DB,
+- [x] 7.3 Smoke test on a real DB: baseline migration applies on a clean DB,
       re-start is idempotent, health flips to 503 when MySQL is stopped
-- [ ] 7.4 Playwright e2e (`web-e2e`) for the slice's critical paths: hello
+- [x] 7.4 Playwright e2e (`web-e2e`) for the slice's critical paths: hello
       page renders and shows green health (from acceptance scenarios)
 - [ ] 7.5 Adversarial review by the `slice-reviewer` subagent (ADR-0010): one
       pass over the slice diff; fix critical/high findings and re-run verify;
       log medium/low dispositions for the retro
-- [ ] 7.6 Launch-and-look: run the app, walk the S-01 happy path (open SPA
+- [x] 7.6 Launch-and-look: run the app, walk the S-01 happy path (open SPA
       locally and on prod, check health), confirm it works
 - [ ] 7.7 Archive the change (`/opsx:archive`) and confirm
       `npx openspec list` is empty
