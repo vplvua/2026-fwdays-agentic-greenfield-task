@@ -39,7 +39,8 @@ Key architecture decisions already fixed by ADRs (don't re-decide them):
 - **ADR-0005**: environments are local + prod only; deploy is a Docker image on Railway; secrets only via env vars.
 - **ADR-0006**: fallow is the independent static checker (dead code, dupes, complexity); `fallow audit` must pass before every commit (part of `verify`).
 - **ADR-0007**: OpenSpec is the SDD working layer — PRD stays normative, `openspec/specs/` trace to FR codes and lose on conflict; one change = one capability slice.
-- **ADR-0008**: trunk-based delivery — slices land as `feat(S-NN):` commits on `main`, no working branches/PRs; the only PR is the final course submission (`.github/pull_request_template.md`).
+- **ADR-0008**: trunk-based delivery — slices land as `feat(S-NN):` commits on the trunk, no working branches/PRs; the only PR is the final course submission (`.github/pull_request_template.md`).
+- **ADR-0012**: the trunk is the `service-desk-mini` branch; `main` mirrors the upstream course starter and is the base of the final submission PR (`service-desk-mini` → `main` in the fork). Never commit project work to `main`.
 
 Domain model in brief: personal workspace per user (no orgs/roles — owner sees only their own data, foreign/missing objects return 404-style), houses directory, tickets with a 5-status lifecycle (Нова → В роботі → Виконана → Закрита, plus Відхилена; only transitions from PRD §5.1 are allowed), a single append-only feed per ticket (user notes + system events), photo attachments.
 
@@ -87,7 +88,7 @@ Fallow config lives in `.fallowrc.json` (toolchain deps ignored, jest infra excl
 The unit of work is a capability slice from `docs/mvp-capability-plan.md`. Per slice:
 
 1. `/opsx:propose` referencing the plan item (S-NN) — proposal/spec deltas trace to FR codes, English, rules come from `openspec/config.yaml`.
-2. `/opsx:apply` — implement tasks; commits go straight to `main` as `feat(S-NN): …` (trunk-based, ADR-0008); process work is `chore:`.
+2. `/opsx:apply` — implement tasks; commits go straight to the `service-desk-mini` trunk as `feat(S-NN): …` (trunk-based, ADR-0008/0012); process work is `chore:`.
 3. DoD before declaring the slice done (full list in the plan §2): all tasks `[x]`, `npm run verify`, smoke test on a real DB, Playwright e2e for the slice's critical paths, **adversarial review by the `slice-reviewer` subagent** (clean context, Sonnet model, one pass over the slice diff; critical/high findings block until fixed — ADR-0010; freeze the range at an explicit end SHA — never `..HEAD` — and make no commits until the verdict lands, so nothing ships unreviewed), launch-and-look check, `/opsx:archive` + empty `npx openspec list` (then `npx prettier --write openspec/specs/**/*.md` — the CLI writes synced specs unformatted and verify will block the closing commit), update `docs/current-state.md` and `docs/traceability-matrix.md`, session retro via `/slice-retro` → `docs/cycles/S-NN.md`.
 
 Skills: `/slice-plan` (generate/audit the capability plan), `/opsx:propose|apply|archive|explore|sync` (OpenSpec lifecycle), `/slice-retro` (post-slice retrospective: metrics, friction, ≤3 small process fixes applied, normative changes only proposed), `/web-conventions` (Angular conventions — read before touching `web/src`; fixed by ADR-0009: zoneless + OnPush, container/presentational, signals + facades, no NgRx).

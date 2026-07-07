@@ -27,13 +27,14 @@ rules:
   proposal:
     - One change = one capability slice from docs/mvp-capability-plan.md =
       one unit of agentic work, landing as a coherent series of
-      `feat(S-NN):` commits on main (trunk-based, no working branches or
-      PRs — ADR-0008; the only PR is the final course submission). A
-      proposal is created from a referenced plan item; link the slice ID
-      in the proposal.
+      `feat(S-NN):` commits on the `service-desk-mini` trunk branch
+      (trunk-based, no working branches or PRs — ADR-0008/0012; `main`
+      mirrors the course starter, the only PR is the final course
+      submission). A proposal is created from a referenced plan item;
+      link the slice ID in the proposal.
     - Every slice is vertical (UI -> API -> DB, full contour) and
       self-contained - deployable to production as soon as it lands on
-      main.
+      the trunk.
     - Reference the PRD requirement codes (FR-*/NFR-*) the slice covers.
     - Include a "Non-goals" section; scope that does not fit the slice is
       cut, not stretched.
