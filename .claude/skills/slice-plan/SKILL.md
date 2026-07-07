@@ -19,12 +19,15 @@ slices derived from `docs/PRD.md`. Written in Ukrainian (it lives in `docs/`).
 ## Slicing rules (normative)
 
 - **One slice = one capability = one unit of agentic work.**
-- **One capability = one PR = one real-behavior proof** (the slice is proven
-  by observing real behavior, not only by unit tests).
+- **One capability = one real-behavior proof** (the slice is proven by
+  observing real behavior, not only by unit tests). Work lands as a
+  coherent series of `feat(S-NN):` commits on main — trunk-based, no
+  working branches or PRs; the only PR is the final course submission
+  (ADR-0008).
 - **Vertical**: every slice cuts the full contour UI → API → DB. No
   "backend-only" or "frontend-only" slices.
-- **Self-contained**: deployable to production immediately after the slice
-  is merged; the app stays fully working after every slice.
+- **Self-contained**: deployable to production as soon as the slice lands
+  on main; the app stays fully working after every slice.
 - Slices are ordered by dependency; each maps to an agent-plan cycle (Е-N).
   Cycle order is fixed; a cycle may contain 1–2 slices.
 - Scope that does not fit a slice is cut (BC-GOAL-01), not stretched.
@@ -56,7 +59,7 @@ For each slice:
 4. E2E scenarios for the slice's critical paths pass in Playwright
    (`web-e2e`), derived from the acceptance scenarios.
 5. `npx openspec validate <change> --strict` — pass; change archived;
-   `npx openspec list` empty before the PR.
+   `npx openspec list` empty before declaring the slice done.
 6. Launch-and-look check: run the app, walk the slice's happy path, confirm
    it works (no recording — note the check in `docs/current-state.md`).
 7. `docs/current-state.md` updated: phase, done, next 1–2 tasks, blockers.

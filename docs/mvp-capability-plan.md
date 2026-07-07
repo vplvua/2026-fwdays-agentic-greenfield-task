@@ -1,6 +1,6 @@
 # MVP Capability Plan — Сервіс-деск Mini (POC)
 
-> **Версія:** 1.0 · **Створено:** 2026-07-07
+> **Версія:** 1.1 · **Створено:** 2026-07-07 · **Оновлено:** 2026-07-07
 > **Спирається на:** [PRD](./PRD.md) (v1.2) · [agent-plan](./agent-plan.md) (v1.4, рамка циклів) · [журнал](./assumptions-open-questions.md) (Р-11)
 >
 > **Робочий план** агентної розробки (Р-11): одиниця роботи — **capability-зріз**.
@@ -8,10 +8,13 @@
 > рамкою метрик і порядку — кожен зріз мапиться на цикл, порядок циклів збережено.
 >
 > **Правила нарізки:** один зріз = одна capability = одна одиниця agentic-роботи =
-> один openspec change = **один PR** = один real-behavior-proof. Кожен зріз
+> один openspec change = один real-behavior-proof. Постачання — **trunk-based**
+> (ADR-0008): зріз лягає в `main` звʼязною серією комітів `feat(S-NN): …`, без
+> робочих гілок і PR; єдиний PR — фінальна здача в upstream. Кожен зріз
 > **вертикальний** (UI → API → БД, повний контур) і **self-contained** — застосунок
-> придатний до прод-деплою одразу після мержу зрізу. Що не вміщується — ріжеться
-> (BC-GOAL-01). Покриття вимог — у [traceability-matrix](./traceability-matrix.md).
+> придатний до прод-деплою одразу після приземлення зрізу в main. Що не
+> вміщується — ріжеться (BC-GOAL-01). Покриття вимог — у
+> [traceability-matrix](./traceability-matrix.md).
 
 ---
 
@@ -124,7 +127,7 @@
 2. `npm run verify` проходить (format, lint, typecheck, fallow audit, openspec validate, tests, build — все блокуюче).
 3. Smoke-тест на реальній БД: створили / змінили / видалили дані зрізу, перевірили інваріанти.
 4. E2E-сценарії критичних шляхів зрізу працюють у Playwright (`web-e2e`) — виводяться з acceptance-сценаріїв.
-5. `npx openspec validate <change> --strict` — pass; change заархівовано; `npx openspec list` порожній перед PR.
+5. `npx openspec validate <change> --strict` — pass; change заархівовано; `npx openspec list` порожній перед оголошенням зрізу готовим.
 6. Launch-and-look: застосунок запущено, happy-path зрізу пройдено очима, працює (без записів — факт перевірки нотується в current-state).
 7. `docs/current-state.md` оновлено: phase, done, next 1–2 tasks, blockers.
 8. [`docs/traceability-matrix.md`](./traceability-matrix.md) оновлено: FR → spec → тест → demo check.
@@ -139,7 +142,7 @@
 - ✅ Quality gates: `npm run verify` + хуки Claude Code (fallow, ADR-0006).
 - ✅ OpenSpec як робочий шар SDD (ADR-0007) + скіл `/slice-plan`.
 - ☐ Інструментарій документації: лінтер `tools/check-docs.py` + скіл `/record-decision` (обсяг Е-1 agent-plan v1.1; pre-commit-частину вже покриває verify gate).
-- ☐ Скіл/правила оформлення PR (крок 4 налаштування).
+- ✅ Флоу постачання: trunk-based, без робочих PR; один фінальний PR здачі (ADR-0008 — окремий PR-скіл не потрібен).
 
 ---
 
@@ -157,3 +160,4 @@
 | Дата       | Зміна                                                                                             |
 | ---------- | ------------------------------------------------------------------------------------------------- |
 | 2026-07-07 | **v1.0:** створено скілом `/slice-plan` з PRD v1.2: зрізи S-01…S-08, DoD, процесний трек, аудит agent-plan (Р-11). |
+| 2026-07-07 | **v1.1:** флоу постачання спрощено за ADR-0008 — trunk-based коміти в main замість «один зріз = один PR»; єдиний PR — фінальна здача. |

@@ -26,10 +26,14 @@ context: |
 rules:
   proposal:
     - One change = one capability slice from docs/mvp-capability-plan.md =
-      one unit of agentic work = one PR. A proposal is created from a
-      referenced plan item; link the slice ID in the proposal.
+      one unit of agentic work, landing as a coherent series of
+      `feat(S-NN):` commits on main (trunk-based, no working branches or
+      PRs — ADR-0008; the only PR is the final course submission). A
+      proposal is created from a referenced plan item; link the slice ID
+      in the proposal.
     - Every slice is vertical (UI -> API -> DB, full contour) and
-      self-contained - deployable to production immediately after merge.
+      self-contained - deployable to production as soon as it lands on
+      main.
     - Reference the PRD requirement codes (FR-*/NFR-*) the slice covers.
     - Include a "Non-goals" section; scope that does not fit the slice is
       cut, not stretched.
@@ -44,4 +48,4 @@ rules:
       change and confirm `npx openspec list` is empty; (7) update
       docs/current-state.md (phase, done, next, blockers) and
       docs/traceability-matrix.md (FR -> spec -> test -> demo check)
-      before opening the PR.
+      before declaring the slice done.

@@ -23,7 +23,10 @@ Before planning or implementing any substantive change, read in this order — t
 All product/engineering decisions live in `docs/` (written in Ukrainian) and drive the implementation:
 
 - `docs/PRD.md` — requirements with stable codes: `FR-*` (functional), `NFR-*` (non-functional), `TC-*` (technical constraints), `BC-*` (business constraints). Every requirement is normative and testable.
-- `docs/agent-plan.md` — the 7 agent cycles Е-1…Е-7 (scaffold+deploy → OTP auth → houses+tickets → status lifecycle+feed → list/filters → photo attachments → polish/retro). Cycle order is fixed; each cycle ends deployed to prod with metrics recorded. If scope doesn't fit a cycle, cut features — don't stretch the cycle.
+- `docs/mvp-capability-plan.md` — **the working plan** (Р-11): capability slices S-01…S-08 with acceptance scenarios and the per-slice Definition of Done. Maintained by the `/slice-plan` skill.
+- `docs/agent-plan.md` — the cycle frame Е-1…Е-7 (order and metrics); slices map to cycles. Cycle order is fixed. If scope doesn't fit, cut features — don't stretch.
+- `docs/current-state.md` — persistent memory bank (phase / done / next / blockers); update it at the end of every slice/session.
+- `docs/traceability-matrix.md` — FR/NFR → slice → spec → test → demo check; update it in every slice's DoD.
 - `docs/adr/` — MADR-format ADRs, immutable (change = new ADR). Engineering decisions go here; product decisions go as `Р-` entries in `docs/assumptions-open-questions.md` plus a PRD edit with changelog bump.
 - `docs/glossary.md` — single source of terminology.
 
@@ -34,6 +37,9 @@ Key architecture decisions already fixed by ADRs (don't re-decide them):
 - **ADR-0003**: attachments on local disk (Railway Volume), served only through the API with owner checks; single app instance.
 - **ADR-0004**: auth is OTP via SMS (TurboSMS) only, no passwords; OTP store is a MySQL table; dev/test mode logs the code instead of sending SMS; session in httpOnly cookie.
 - **ADR-0005**: environments are local + prod only; deploy is a Docker image on Railway; secrets only via env vars.
+- **ADR-0006**: fallow is the independent static checker (dead code, dupes, complexity); `fallow audit` must pass before every commit (part of `verify`).
+- **ADR-0007**: OpenSpec is the SDD working layer — PRD stays normative, `openspec/specs/` trace to FR codes and lose on conflict; one change = one capability slice.
+- **ADR-0008**: trunk-based delivery — slices land as `feat(S-NN):` commits on `main`, no working branches/PRs; the only PR is the final course submission (`.github/pull_request_template.md`).
 
 Domain model in brief: personal workspace per user (no orgs/roles — owner sees only their own data, foreign/missing objects return 404-style), houses directory, tickets with a 5-status lifecycle (Нова → В роботі → Виконана → Закрита, plus Відхилена; only transitions from PRD §5.1 are allowed), a single append-only feed per ticket (user notes + system events), photo attachments.
 
@@ -57,10 +63,34 @@ npx nx test api             # Jest unit tests
 npx nx test web             # Angular unit tests (vitest-based @angular/build:unit-test)
 npx nx e2e api-e2e          # starts API itself, then runs Jest+axios specs
 npx nx e2e web-e2e          # Playwright, starts web dev server itself
-npx nx run-many -t lint test build   # everything
+npm run verify              # full blocking gate (see Quality gates) — runs before every commit via hook
+npm run typecheck           # tsc --noEmit for every project tsconfig
+npx fallow                  # static analysis report (dead code, dupes, complexity)
+npx openspec list           # active changes (must be empty after archive)
 ```
 
 Single test file: `npx nx test api -- app.controller` (positional Jest pattern). For Playwright: `npx nx e2e web-e2e -- --grep "name"`.
+
+## Quality gates
+
+`npm run verify` is the blocking ritual: `format:check` → `lint` → `typecheck` → `fallow audit` → `openspec validate --all --strict` → `test` → `build`. E2e is intentionally NOT part of it (run targeted `nx e2e` specs per slice instead).
+
+Claude Code hooks (`.claude/settings.json`, scripts in `.claude/hooks/`) enforce this automatically:
+
+- **PostToolUse** on Write|Edit: prettier + `eslint --fix` on the edited file; unfixable errors come back as feedback — fix them immediately.
+- **PreToolUse** on Bash: any command containing `git commit` first runs `npm run verify`; the commit is blocked if it fails. Expect ~1–2 min on a cold Nx cache.
+
+Fallow config lives in `.fallowrc.json` (toolchain deps ignored, jest infra excluded). New string-referenced files (e.g. jest setup files) may show up as false "dead files" — extend the config, don't suppress inline without need.
+
+## Slice workflow (SDD)
+
+The unit of work is a capability slice from `docs/mvp-capability-plan.md`. Per slice:
+
+1. `/opsx:propose` referencing the plan item (S-NN) — proposal/spec deltas trace to FR codes, English, rules come from `openspec/config.yaml`.
+2. `/opsx:apply` — implement tasks; commits go straight to `main` as `feat(S-NN): …` (trunk-based, ADR-0008); process work is `chore:`.
+3. DoD before declaring the slice done (full list in the plan §2): all tasks `[x]`, `npm run verify`, smoke test on a real DB, Playwright e2e for the slice's critical paths, launch-and-look check, `/opsx:archive` + empty `npx openspec list`, update `docs/current-state.md` and `docs/traceability-matrix.md`.
+
+Skills: `/slice-plan` (generate/audit the capability plan), `/opsx:propose|apply|archive|explore|sync` (OpenSpec lifecycle).
 
 ## Conventions
 
