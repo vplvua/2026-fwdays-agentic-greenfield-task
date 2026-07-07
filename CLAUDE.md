@@ -8,6 +8,16 @@ Homework for the fwdays course "Agentic Engineering: Greenfield". The project be
 
 The code is currently a fresh Nx scaffold (hello-world Angular app + NestJS API). Implementation proceeds in planned agent cycles — see below.
 
+## Project Handoff Protocol
+
+Before planning or implementing any substantive change, read in this order — the order is deliberate, from general (state) to specific (specs):
+
+1. `docs/current-state.md` — current state and next-step guidance (persistent memory bank: a snapshot, not a log)
+2. `docs/mvp-capability-plan.md` — the working plan: MVP capability slice sequence S-01…S-08 and the per-slice Definition of Done
+3. `openspec/config.yaml` — project context and slice workflow rules for OpenSpec artifacts
+4. `openspec/specs/<capability>/` — current accepted behavior
+5. `docs/adr/` — accepted architecture decisions
+
 ## Docs are normative (SDD)
 
 All product/engineering decisions live in `docs/` (written in Ukrainian) and drive the implementation:

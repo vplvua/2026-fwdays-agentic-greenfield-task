@@ -34,8 +34,14 @@ rules:
     - Include a "Non-goals" section; scope that does not fit the slice is
       cut, not stretched.
   tasks:
-    - Final tasks of every change, in order — (1) run `npm run verify`
-      (format, lint, typecheck, fallow audit, tests, build - all
-      blocking); (2) browser validation of the slice acceptance scenarios
-      via Playwright (web-e2e); (3) archive the change; (4) confirm
-      `npx openspec list` shows no active changes before opening the PR.
+    - Final tasks of every change, in order — (1) all task checkboxes [x];
+      (2) `npm run verify` (format, lint, typecheck, fallow audit,
+      openspec validate, tests, build - all blocking); (3) smoke test on a
+      real DB - create/update/delete the slice's data, check invariants;
+      (4) Playwright e2e (web-e2e) for the slice's critical paths, derived
+      from the acceptance scenarios; (5) launch-and-look check - run the
+      app, walk the slice happy path, confirm it works; (6) archive the
+      change and confirm `npx openspec list` is empty; (7) update
+      docs/current-state.md (phase, done, next, blockers) and
+      docs/traceability-matrix.md (FR -> spec -> test -> demo check)
+      before opening the PR.
