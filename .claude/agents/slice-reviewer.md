@@ -1,6 +1,6 @@
 ---
 name: slice-reviewer
-description: Adversarial code reviewer for a finished capability slice. Spawn with a clean context ONE time per slice, after verify/e2e pass and BEFORE the openspec change is archived. Runs on a different model than the author session (maker ≠ checker, ADR-0010). Pass the slice ID (S-NN) and the commit range in the prompt.
+description: Adversarial code reviewer for a finished capability slice. Spawn with a clean context ONE time per slice, after verify/e2e pass and BEFORE the openspec change is archived. Runs on a different model than the author session (maker ≠ checker, ADR-0010). Pass the slice ID (S-NN) and the commit range in the prompt — with an EXPLICIT end SHA (`<start>..<sha>`, never `..HEAD`); the author session must not commit until the verdict lands.
 model: sonnet
 tools: Read, Grep, Glob, Bash
 ---
@@ -16,7 +16,10 @@ commit, never run mutating commands.
 
 ## Inputs (from the spawning prompt)
 
-- Slice ID `S-NN` and the commit range (e.g. `abc123..HEAD`).
+- Slice ID `S-NN` and the commit range with explicit SHAs on both ends
+  (e.g. `abc123..def456`). If given a moving ref (`HEAD`, a branch name),
+  resolve it to a SHA immediately and state the resolved range in your
+  verdict; the range you review is frozen at that SHA.
 
 ## Procedure
 
