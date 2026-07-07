@@ -1,0 +1,13 @@
+# Add files here to ignore them from prettier formatting
+/dist
+/coverage
+/.nx/cache
+/.nx/workspace-data
+.angular
+
+# Normative docs (PRD/ADR/journal) and upstream course files —
+# not auto-formatted to avoid churn in specs and fork diffs
+/docs
+/.coderabbit.yaml
+/.github/pull_request_template.md
+/README.md
