@@ -3,35 +3,25 @@
     "nx-mcp": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "nx",
-        "mcp"
-      ],
+      "args": ["nx", "mcp"],
       "env": {}
     },
     "angular-cli": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "@angular/cli",
-        "mcp"
-      ],
+      "args": ["@angular/cli", "mcp"],
       "env": {}
     },
     "playwright": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ],
+      "args": ["@playwright/mcp@latest"],
       "env": {}
     },
     "fallow": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "fallow-mcp"
-      ],
+      "args": ["fallow-mcp"],
       "env": {}
     }
   }
