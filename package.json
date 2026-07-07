@@ -5,7 +5,7 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "dev": "test -f .env || cp .env.example .env; docker compose up -d --wait && prisma migrate deploy && nx run-many -t serve -p api web",
+    "dev": "test -f .env || cp .env.example .env; docker compose up -d --wait && prisma generate && prisma migrate deploy && nx run-many -t serve -p api web",
     "lint": "nx run-many -t lint",
     "typecheck": "tsc -p api/tsconfig.app.json --noEmit && tsc -p api/tsconfig.spec.json --noEmit && tsc -p web/tsconfig.app.json --noEmit && tsc -p web/tsconfig.spec.json --noEmit && tsc -p api-e2e/tsconfig.spec.json --noEmit && tsc -p web-e2e/tsconfig.json --noEmit",
     "test": "nx run-many -t test",

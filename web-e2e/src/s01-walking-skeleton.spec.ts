@@ -21,4 +21,21 @@ test.describe('S-01 walking skeleton', () => {
     expect(res.status()).toBe(200);
     expect(await res.json()).toEqual({ status: 'ok', db: 'up' });
   });
+
+  test('deep link falls back to the SPA', async ({ page }) => {
+    await page.goto('/some/route/that/does/not/exist');
+
+    // SPA fallback serves index.html; the app shell renders
+    await expect(page).toHaveTitle('Сервіс-деск Mini');
+  });
+
+  test('unknown API route stays a JSON 404, not the SPA page', async ({
+    request,
+  }) => {
+    const res = await request.get('/api/does-not-exist');
+
+    expect(res.status()).toBe(404);
+    expect(res.headers()['content-type']).toContain('application/json');
+    expect(await res.json()).toMatchObject({ statusCode: 404 });
+  });
 });

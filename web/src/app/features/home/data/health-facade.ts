@@ -28,7 +28,7 @@ export class HealthFacade {
     } catch (err) {
       // The API reports DB loss as 503 with the same JSON shape; anything
       // else (network down, API dead) collapses to the generic error state
-      const health =
+      const health: HealthDto =
         err instanceof HttpErrorResponse && isHealthDto(err.error)
           ? err.error
           : { status: 'error', db: 'down' };
@@ -38,10 +38,12 @@ export class HealthFacade {
 }
 
 function isHealthDto(value: unknown): value is HealthDto {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const v = value as HealthDto;
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as HealthDto).status === 'string' &&
-    typeof (value as HealthDto).db === 'string'
+    (v.status === 'ok' || v.status === 'error') &&
+    (v.db === 'up' || v.db === 'down')
   );
 }

@@ -1,4 +1,4 @@
 export interface HealthDto {
-  status: string;
-  db: string;
+  status: 'ok' | 'error';
+  db: 'up' | 'down';
 }
