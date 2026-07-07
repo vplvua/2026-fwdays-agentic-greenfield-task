@@ -1,28 +1,40 @@
-# Current State (2026-07-07, 16:40 Kyiv)
+# Current State (2026-07-08, 01:15 Kyiv)
 
 > Persistent memory bank: відбиток поточного стану, **не лог**. Оновлюється
-> наприкінці кожної сесії/зрізу (DoD п.7). Формат фіксований: Phase / Done last
+> наприкінці кожної сесії/зрізу (DoD п.8). Формат фіксований: Phase / Done last
 > session / Next 1-2 tasks / Blockers.
 
 ## Phase
 
-- Tooling setup завершено (перед S-01): quality gates + SDD-контур готові, зрізи ще не стартували
+- S-01 «Хребет застосунку і прод-деплой» завершено; прод живий на Railway,
+  далі — S-02 (автентифікація OTP)
 
 ## Done last session
 
-- fallow: devDependency + MCP + `.fallowrc.json`, ADR-0006; 2 реальні знахідки виправлено
-- Quality gates: `npm run verify` (format, lint, typecheck, fallow, openspec, tests, build) + хуки Claude Code (post-edit format/lint, pre-commit verify gate)
-- OpenSpec 1.5: init з `/opsx:*`-командами, правила в `openspec/config.yaml`, ADR-0007
-- Скіл `/slice-plan` + `docs/mvp-capability-plan.md` v1.1 (S-01…S-08, DoD, аудит agent-plan)
-- ADR-0008: trunk-based, без робочих PR; один фінальний PR здачі
-- CLAUDE.md консолідовано: handoff protocol, quality gates, slice workflow, скіли
-- Tests: verify зелений (unit web/api, build обох, fallow audit clean)
+- S-01 повністю: Prisma 7 + MySQL (порожня baseline-міграція, migrate deploy
+  на старті контейнера), `GET /api/health` (200/503 за станом БД),
+  NestJS роздає SPA-статику (ADR-0002), hello-сторінка на Angular Material
+  (ADR-0011, В-01 закрито), Dockerfile (multi-stage), `npm run dev`
+- Прод на Railway: https://app-production-1adaf.up.railway.app — SPA + health
+  зелений, MySQL по приватній мережі, Volume `/data` під S-07, daily backups
+  увімкнено; конфіг — `railway.json`
+- Тести: unit (api 4, web 7), api-e2e (2), web-e2e (4 сценарії × 3 браузери)
+- Adversarial-ревʼю slice-reviewer (ADR-0010): BLOCK → 2 high виправлено
+  (prisma generate у `npm run dev`; застарілий api-e2e скафолд), medium/low
+  диспозиції — у ретро `docs/cycles/S-01.md`
+- Важливі граблі (закріплено в design.md зрізу): MySQL 8 `caching_sha2` +
+  mariadb-драйвер потребує `allowPublicKeyRetrieval` (інакше pool не
+  відновлюється після рестарту БД); nxE2EPreset падає під ESM-лоадером
+  Playwright — конфіг web-e2e без пресета
 
 ## Next 1-2 tasks
 
-- [ ] `/opsx:propose` S-01 «Хребет застосунку і прод-деплой» (перший зріз)
-- [ ] Процесний трек: лінтер `tools/check-docs.py` + скіл `/record-decision` (можна паралельно з S-01)
+- [ ] `/opsx:propose` S-02 «Автентифікація OTP» (user, otp_code, TurboSMS +
+      dev-фолбек, сесія в httpOnly cookie — ADR-0004)
+- [ ] Процесний трек (опційно): лінтер `tools/check-docs.py` + скіл
+      `/record-decision`
 
 ## Blockers
 
-- (none)
+- (none). Локальна особливість машини: порт 3000 періодично зайнятий іншим
+  проєктом (`~/Projects/cabinet`) — зупиняти його під час роботи тут

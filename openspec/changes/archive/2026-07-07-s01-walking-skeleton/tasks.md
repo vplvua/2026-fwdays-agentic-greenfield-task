@@ -61,7 +61,7 @@
 
 ## 7. Slice DoD (fixed order per openspec/config.yaml)
 
-- [ ] 7.1 All task checkboxes above are `[x]`
+- [x] 7.1 All task checkboxes above are `[x]`
 - [x] 7.2 `npm run verify` passes (format, lint, typecheck, fallow audit,
       openspec validate, tests, build)
 - [x] 7.3 Smoke test on a real DB: baseline migration applies on a clean DB,
@@ -73,8 +73,8 @@
       log medium/low dispositions for the retro
 - [x] 7.6 Launch-and-look: run the app, walk the S-01 happy path (open SPA
       locally and on prod, check health), confirm it works
-- [ ] 7.7 Archive the change (`/opsx:archive`) and confirm
+- [x] 7.7 Archive the change (`/opsx:archive`) and confirm
       `npx openspec list` is empty
-- [ ] 7.8 Update `docs/current-state.md` (phase, done, next, blockers) and
+- [x] 7.8 Update `docs/current-state.md` (phase, done, next, blockers) and
       `docs/traceability-matrix.md` (TC/NFR → spec → test → demo check)
-- [ ] 7.9 Session retrospective via `/slice-retro` → `docs/cycles/S-01.md`
+- [x] 7.9 Session retrospective via `/slice-retro` → `docs/cycles/S-01.md`
