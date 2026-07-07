@@ -1,6 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { HealthController } from './health.controller';
+import { HEALTH_DB_TIMEOUT_MS, HealthController } from './health.controller';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('HealthController', () => {
@@ -32,5 +32,22 @@ describe('HealthController', () => {
       expect(e.getStatus()).toBe(503);
       expect(e.getResponse()).toEqual({ status: 'error', db: 'down' });
     });
+  });
+
+  it('fails fast with 503 when the DB query hangs past the probe timeout', async () => {
+    jest.useFakeTimers();
+    try {
+      prismaMock.$queryRaw.mockReturnValue(new Promise(() => undefined));
+      const failure = controller.check();
+      const assertion = expect(failure).rejects.toBeInstanceOf(HttpException);
+      await jest.advanceTimersByTimeAsync(HEALTH_DB_TIMEOUT_MS);
+      await assertion;
+      await failure.catch((e: HttpException) => {
+        expect(e.getStatus()).toBe(503);
+        expect(e.getResponse()).toEqual({ status: 'error', db: 'down' });
+      });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
