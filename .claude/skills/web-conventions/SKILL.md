@@ -22,8 +22,15 @@ Two kinds of components, nothing else:
   open) is allowed as local `signal`s; business data and loading state are
   NOT.
 
-Rules for both: `ChangeDetectionStrategy.OnPush` always; native control
-flow (`@if`/`@for` with `track`); no direct DOM manipulation; user-facing
+Rules for both (aligned with the official Angular best-practices guide):
+`ChangeDetectionStrategy.OnPush` always; native control flow (`@if`/`@for`
+with `track`); do NOT write `standalone: true` (default since v20);
+`class`/`style` bindings instead of `ngClass`/`ngStyle`; host bindings in
+the `host` object of the decorator, not `@HostBinding`/`@HostListener`;
+prefer inline templates for small components; `NgOptimizedImage` for
+static images; no direct DOM manipulation; forms are **typed Reactive
+forms** (never template-driven); accessibility is not optional — WCAG AA
+basics (focus management, contrast, ARIA) on every screen; user-facing
 strings in Ukrainian.
 
 ## State: signals + facades (no NgRx)
@@ -102,5 +109,8 @@ container → facade method. Only containers call facade methods.
 
 NgRx or any store lib; zone.js; item containers; `shared/` "just in case";
 `libs/*` for a single consumer; two-way binding of business state;
-`.component.ts` suffixes. The UI kit is decided in S-01 (В-01) — follow
-whatever ADR records it, don't add a second one.
+`.component.ts` suffixes; `standalone: true` in decorators; `ngClass` /
+`ngStyle`; `@HostBinding` / `@HostListener`; template-driven forms;
+`any` (use `unknown` if the type is genuinely uncertain); `mutate` on
+signals (use `set`/`update`). The UI kit is decided in S-01 (В-01) —
+follow whatever ADR records it, don't add a second one.
