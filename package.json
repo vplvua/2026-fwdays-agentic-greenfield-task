@@ -5,6 +5,7 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "dev": "test -f .env || cp .env.example .env; docker compose up -d --wait && prisma migrate deploy && nx run-many -t serve -p api web",
     "lint": "nx run-many -t lint",
     "typecheck": "tsc -p api/tsconfig.app.json --noEmit && tsc -p api/tsconfig.spec.json --noEmit && tsc -p web/tsconfig.app.json --noEmit && tsc -p web/tsconfig.spec.json --noEmit && tsc -p api-e2e/tsconfig.spec.json --noEmit && tsc -p web-e2e/tsconfig.json --noEmit",
     "test": "nx run-many -t test",
@@ -51,6 +52,7 @@
     "jsdom": "^27.1.0",
     "nx": "23.0.1",
     "prettier": "3.9.4",
+    "prisma": "^7.8.0",
     "ts-jest": "^29.4.0",
     "ts-node": "10.9.1",
     "tslib": "^2.3.0",
@@ -62,14 +64,20 @@
     "webpack-dev-server": "^5.2.1"
   },
   "dependencies": {
+    "@angular/cdk": "~21.2.0",
     "@angular/common": "~21.2.0",
     "@angular/compiler": "~21.2.0",
     "@angular/core": "~21.2.0",
+    "@angular/material": "~21.2.0",
     "@angular/platform-browser": "~21.2.0",
     "@angular/router": "~21.2.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/serve-static": "^5.0.5",
+    "@prisma/adapter-mariadb": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "dotenv": "^17.4.2",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0"
   }

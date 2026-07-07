@@ -23,6 +23,7 @@
 | [0008](./ADR-0008-trunk-based-no-working-prs.md) | Спрощений флоу постачання: коміти в main, один фінальний PR здачі | Accepted | BC-PRIN-01 · Р-11 |
 | [0009](./ADR-0009-frontend-architecture.md) | Архітектура фронтенду: signals + facades, container/presentational | Accepted | TC-STACK-01 · TC-UI-01 · BC-PRIN-01 |
 | [0010](./ADR-0010-adversarial-slice-review.md) | Adversarial-ревʼю зрізу: субагент з чистим контекстом на іншій моделі | Accepted | maker ≠ checker · BC-COST-01 |
+| [0011](./ADR-0011-ui-kit-angular-material.md) | UI-набір фронтенду: Angular Material v21 + CDK | Accepted | TC-UI-01 · NFR-COMPAT-01 · BC-PRIN-01 · В-01 |
 
 ## Зведений стек (з ADR)
 
