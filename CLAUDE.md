@@ -78,9 +78,9 @@ Single test file: `npx nx test api -- app.controller` (positional Jest pattern).
 Claude Code hooks (`.claude/settings.json`, scripts in `.claude/hooks/`) enforce this automatically:
 
 - **PostToolUse** on Write|Edit: prettier + `eslint --fix` on the edited file; unfixable errors come back as feedback — fix them immediately.
-- **PreToolUse** on Bash: any command containing `git commit` first runs `npm run verify`; the commit is blocked if it fails. Expect ~1–2 min on a cold Nx cache.
+- **PreToolUse** on Bash: any command containing `git commit` first runs `npm run verify`; the commit is blocked if it fails. Expect ~1–2 min on a cold Nx cache. The hook fires BEFORE the whole command executes — never chain a fix with the commit (`prettier --write … && git commit` verifies the unfixed tree); run fixes as a separate command first.
 
-Fallow config lives in `.fallowrc.json` (toolchain deps ignored, jest infra excluded). New string-referenced files (e.g. jest setup files) may show up as false "dead files" — extend the config, don't suppress inline without need.
+Fallow config lives in `.fallowrc.json` (toolchain deps ignored, jest infra excluded). New string-referenced files (e.g. jest setup files) may show up as false "dead files" — extend the config, don't suppress inline without need. Fallow also blocks on unused dependencies: commit newly installed packages together with the code that first imports them, not ahead of it.
 
 ## Slice workflow (SDD)
 
@@ -88,7 +88,7 @@ The unit of work is a capability slice from `docs/mvp-capability-plan.md`. Per s
 
 1. `/opsx:propose` referencing the plan item (S-NN) — proposal/spec deltas trace to FR codes, English, rules come from `openspec/config.yaml`.
 2. `/opsx:apply` — implement tasks; commits go straight to `main` as `feat(S-NN): …` (trunk-based, ADR-0008); process work is `chore:`.
-3. DoD before declaring the slice done (full list in the plan §2): all tasks `[x]`, `npm run verify`, smoke test on a real DB, Playwright e2e for the slice's critical paths, **adversarial review by the `slice-reviewer` subagent** (clean context, Sonnet model, one pass over the slice diff; critical/high findings block until fixed — ADR-0010), launch-and-look check, `/opsx:archive` + empty `npx openspec list`, update `docs/current-state.md` and `docs/traceability-matrix.md`, session retro via `/slice-retro` → `docs/cycles/S-NN.md`.
+3. DoD before declaring the slice done (full list in the plan §2): all tasks `[x]`, `npm run verify`, smoke test on a real DB, Playwright e2e for the slice's critical paths, **adversarial review by the `slice-reviewer` subagent** (clean context, Sonnet model, one pass over the slice diff; critical/high findings block until fixed — ADR-0010), launch-and-look check, `/opsx:archive` + empty `npx openspec list` (then `npx prettier --write openspec/specs/**/*.md` — the CLI writes synced specs unformatted and verify will block the closing commit), update `docs/current-state.md` and `docs/traceability-matrix.md`, session retro via `/slice-retro` → `docs/cycles/S-NN.md`.
 
 Skills: `/slice-plan` (generate/audit the capability plan), `/opsx:propose|apply|archive|explore|sync` (OpenSpec lifecycle), `/slice-retro` (post-slice retrospective: metrics, friction, ≤3 small process fixes applied, normative changes only proposed), `/web-conventions` (Angular conventions — read before touching `web/src`; fixed by ADR-0009: zoneless + OnPush, container/presentational, signals + facades, no NgRx).
 
