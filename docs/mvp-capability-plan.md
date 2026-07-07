@@ -1,6 +1,6 @@
 # MVP Capability Plan — Сервіс-деск Mini (POC)
 
-> **Версія:** 1.2 · **Створено:** 2026-07-07 · **Оновлено:** 2026-07-07
+> **Версія:** 1.3 · **Створено:** 2026-07-07 · **Оновлено:** 2026-07-07
 > **Спирається на:** [PRD](./PRD.md) (v1.2) · [agent-plan](./agent-plan.md) (v1.4, рамка циклів) · [журнал](./assumptions-open-questions.md) (Р-11)
 >
 > **Робочий план** агентної розробки (Р-11): одиниця роботи — **capability-зріз**.
@@ -127,11 +127,12 @@
 2. `npm run verify` проходить (format, lint, typecheck, fallow audit, openspec validate, tests, build — все блокуюче).
 3. Smoke-тест на реальній БД: створили / змінили / видалили дані зрізу, перевірили інваріанти.
 4. E2E-сценарії критичних шляхів зрізу працюють у Playwright (`web-e2e`) — виводяться з acceptance-сценаріїв.
-5. `npx openspec validate <change> --strict` — pass; change заархівовано; `npx openspec list` порожній перед оголошенням зрізу готовим.
+5. Adversarial-ревʼю субагентом `slice-reviewer` (ADR-0010): чистий контекст, інша модель, один прогін по diff зрізу. `critical`/`high` знахідки — виправлені (з повторним verify); `medium`/`low` — на розсуд автора, диспозиції фіксуються в ретро.
 6. Launch-and-look: застосунок запущено, happy-path зрізу пройдено очима, працює (без записів — факт перевірки нотується в current-state).
-7. `docs/current-state.md` оновлено: phase, done, next 1–2 tasks, blockers.
-8. [`docs/traceability-matrix.md`](./traceability-matrix.md) оновлено: FR → spec → тест → demo check.
-9. Ретроспектива сесії скілом `/slice-retro`: метрики й тертя → [`docs/cycles/S-NN.md`](./cycles/README.md); дрібні процесні покращення (≤3) застосовано, нормативні — запропоновано користувачу.
+7. `npx openspec validate <change> --strict` — pass; change заархівовано; `npx openspec list` порожній перед оголошенням зрізу готовим.
+8. `docs/current-state.md` оновлено: phase, done, next 1–2 tasks, blockers.
+9. [`docs/traceability-matrix.md`](./traceability-matrix.md) оновлено: FR → spec → тест → demo check.
+10. Ретроспектива сесії скілом `/slice-retro`: метрики й тертя → [`docs/cycles/S-NN.md`](./cycles/README.md); дрібні процесні покращення (≤3) застосовано, нормативні — запропоновано користувачу.
 
 ---
 
@@ -163,3 +164,4 @@
 | 2026-07-07 | **v1.0:** створено скілом `/slice-plan` з PRD v1.2: зрізи S-01…S-08, DoD, процесний трек, аудит agent-plan (Р-11). |
 | 2026-07-07 | **v1.1:** флоу постачання спрощено за ADR-0008 — trunk-based коміти в main замість «один зріз = один PR»; єдиний PR — фінальна здача. |
 | 2026-07-07 | **v1.2:** DoD доповнено п.9 — ретроспектива сесії скілом `/slice-retro` → `docs/cycles/S-NN.md` (реалізує вимогу метрик agent-plan §2). |
+| 2026-07-07 | **v1.3:** DoD доповнено п.5 — adversarial-ревʼю субагентом `slice-reviewer` (ADR-0010); порядок нормалізовано: ревʼю → launch-and-look → archive. |

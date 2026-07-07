@@ -58,15 +58,19 @@ For each slice:
    check invariants.
 4. E2E scenarios for the slice's critical paths pass in Playwright
    (`web-e2e`), derived from the acceptance scenarios.
-5. `npx openspec validate <change> --strict` — pass; change archived;
-   `npx openspec list` empty before declaring the slice done.
+5. Adversarial review by the `slice-reviewer` subagent (ADR-0010): clean
+   context, different model, one pass over the slice diff.
+   `critical`/`high` findings fixed (verify re-run); `medium`/`low` at the
+   author's discretion, dispositions logged in the retro.
 6. Launch-and-look check: run the app, walk the slice's happy path, confirm
    it works (no recording — note the check in `docs/current-state.md`).
-7. `docs/current-state.md` updated: phase, done, next 1–2 tasks, blockers.
-8. `docs/traceability-matrix.md` updated: FR → spec → test → demo check.
-9. Session retrospective via `/slice-retro`: metrics and friction →
-   `docs/cycles/S-NN.md`; small process fixes (≤3) applied, normative
-   changes proposed to the user.
+7. `npx openspec validate <change> --strict` — pass; change archived;
+   `npx openspec list` empty before declaring the slice done.
+8. `docs/current-state.md` updated: phase, done, next 1–2 tasks, blockers.
+9. `docs/traceability-matrix.md` updated: FR → spec → test → demo check.
+10. Session retrospective via `/slice-retro`: metrics and friction →
+    `docs/cycles/S-NN.md`; small process fixes (≤3) applied, normative
+    changes proposed to the user.
 
 ## Procedure
 

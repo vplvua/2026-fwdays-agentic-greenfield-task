@@ -43,11 +43,15 @@ rules:
       openspec validate, tests, build - all blocking); (3) smoke test on a
       real DB - create/update/delete the slice's data, check invariants;
       (4) Playwright e2e (web-e2e) for the slice's critical paths, derived
-      from the acceptance scenarios; (5) launch-and-look check - run the
-      app, walk the slice happy path, confirm it works; (6) archive the
-      change and confirm `npx openspec list` is empty; (7) update
+      from the acceptance scenarios; (5) adversarial review by the
+      slice-reviewer subagent (ADR-0010) - clean context, different model,
+      one pass over the slice diff; critical/high findings must be fixed
+      (re-run verify), medium/low at the author's discretion with
+      dispositions logged in the retro; (6) launch-and-look check - run
+      the app, walk the slice happy path, confirm it works; (7) archive
+      the change and confirm `npx openspec list` is empty; (8) update
       docs/current-state.md (phase, done, next, blockers) and
       docs/traceability-matrix.md (FR -> spec -> test -> demo check);
-      (8) session retrospective via the /slice-retro skill - metrics and
+      (9) session retrospective via the /slice-retro skill - metrics and
       friction recorded in docs/cycles/S-NN.md - before declaring the
       slice done.
