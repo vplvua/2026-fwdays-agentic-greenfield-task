@@ -47,5 +47,7 @@ rules:
       app, walk the slice happy path, confirm it works; (6) archive the
       change and confirm `npx openspec list` is empty; (7) update
       docs/current-state.md (phase, done, next, blockers) and
-      docs/traceability-matrix.md (FR -> spec -> test -> demo check)
-      before declaring the slice done.
+      docs/traceability-matrix.md (FR -> spec -> test -> demo check);
+      (8) session retrospective via the /slice-retro skill - metrics and
+      friction recorded in docs/cycles/S-NN.md - before declaring the
+      slice done.
