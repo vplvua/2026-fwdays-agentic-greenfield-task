@@ -90,7 +90,7 @@ The unit of work is a capability slice from `docs/mvp-capability-plan.md`. Per s
 2. `/opsx:apply` — implement tasks; commits go straight to `main` as `feat(S-NN): …` (trunk-based, ADR-0008); process work is `chore:`.
 3. DoD before declaring the slice done (full list in the plan §2): all tasks `[x]`, `npm run verify`, smoke test on a real DB, Playwright e2e for the slice's critical paths, launch-and-look check, `/opsx:archive` + empty `npx openspec list`, update `docs/current-state.md` and `docs/traceability-matrix.md`, session retro via `/slice-retro` → `docs/cycles/S-NN.md`.
 
-Skills: `/slice-plan` (generate/audit the capability plan), `/opsx:propose|apply|archive|explore|sync` (OpenSpec lifecycle), `/slice-retro` (post-slice retrospective: metrics, friction, ≤3 small process fixes applied, normative changes only proposed).
+Skills: `/slice-plan` (generate/audit the capability plan), `/opsx:propose|apply|archive|explore|sync` (OpenSpec lifecycle), `/slice-retro` (post-slice retrospective: metrics, friction, ≤3 small process fixes applied, normative changes only proposed), `/web-conventions` (Angular conventions — read before touching `web/src`; fixed by ADR-0009: zoneless + OnPush, container/presentational, signals + facades, no NgRx).
 
 ## Conventions
 

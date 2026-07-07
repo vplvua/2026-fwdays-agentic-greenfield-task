@@ -21,6 +21,7 @@
 | [0006](./ADR-0006-fallow-static-verification.md) | Незалежна статична верифікація коду агентів: fallow (CLI + MCP) | Accepted | BC-PRIN-01 · BC-GOAL-01 |
 | [0007](./ADR-0007-openspec-sdd-workflow.md) | OpenSpec як робочий шар SDD: ієрархія правди та цикл слайсу | Accepted (PR-флоу → 0008) | BC-GOAL-01 · BC-PRIN-01 · Р-01 |
 | [0008](./ADR-0008-trunk-based-no-working-prs.md) | Спрощений флоу постачання: коміти в main, один фінальний PR здачі | Accepted | BC-PRIN-01 · Р-11 |
+| [0009](./ADR-0009-frontend-architecture.md) | Архітектура фронтенду: signals + facades, container/presentational | Accepted | TC-STACK-01 · TC-UI-01 · BC-PRIN-01 |
 
 ## Зведений стек (з ADR)
 
