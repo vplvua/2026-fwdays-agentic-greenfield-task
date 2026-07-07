@@ -18,6 +18,7 @@
 | [0003](./ADR-0003-local-attachment-storage.md) | Вкладення на локальному диску (Railway Volume) | Accepted | TC-MEDIA-01 · NFR-STOR-01 · NFR-REL-01 |
 | [0004](./ADR-0004-otp-turbosms-mysql-store.md) | OTP: TurboSMS + dev-фолбек; транзитний стор — таблиця MySQL | Accepted | TC-AUTH-01 · FR-AUTH-01…04 · BC-COST-01 |
 | [0005](./ADR-0005-environments-deploy.md) | Середовища й деплой: local + prod, Docker-образ на Railway | Accepted | TC-OPS-01 · BC-COST-01 |
+| [0006](./ADR-0006-fallow-static-verification.md) | Незалежна статична верифікація коду агентів: fallow (CLI + MCP) | Accepted | BC-PRIN-01 · BC-GOAL-01 |
 
 ## Зведений стек (з ADR)
 
