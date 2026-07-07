@@ -9,7 +9,7 @@
     "typecheck": "tsc -p api/tsconfig.app.json --noEmit && tsc -p api/tsconfig.spec.json --noEmit && tsc -p web/tsconfig.app.json --noEmit && tsc -p web/tsconfig.spec.json --noEmit && tsc -p api-e2e/tsconfig.spec.json --noEmit && tsc -p web-e2e/tsconfig.json --noEmit",
     "test": "nx run-many -t test",
     "build": "nx run-many -t build",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && fallow audit && npm run test && npm run build"
+    "verify": "npm run format:check && npm run lint && npm run typecheck && fallow audit && openspec validate --all --strict && npm run test && npm run build"
   },
   "devDependencies": {
     "@angular-devkit/core": "~21.2.0",
@@ -19,6 +19,7 @@
     "@angular/compiler-cli": "~21.2.0",
     "@angular/language-service": "~21.2.0",
     "@eslint/js": "^9.8.0",
+    "@fission-ai/openspec": "^1.5.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
     "@nx/angular": "^23.0.1",

@@ -1,0 +1,41 @@
+schema: spec-driven
+
+context: |
+  Service-desk Mini — a minimal service-desk app (tickets for building
+  residents), built as a POC of spec-driven, agent-driven development.
+
+  Tech stack: Nx monorepo; Angular 21 SPA (standalone components, SCSS) in
+  web/; NestJS + Prisma + MySQL in api/; REST/JSON + OpenAPI; deploy is a
+  single Docker container on Railway (NestJS serves the SPA statics).
+  Engineering decisions are fixed in docs/adr/ (MADR, immutable) — do not
+  re-decide them.
+
+  Source-of-truth hierarchy (ADR-0007):
+  - docs/PRD.md (Ukrainian) is normative: requirement codes FR-*, NFR-*,
+    TC-*, BC-* are the single source of truth. openspec/specs/ is the
+    derived working layer for agents; on any conflict the PRD wins.
+  - Every spec requirement must reference the PRD code(s) it implements.
+  - Product decisions are NOT made in openspec artifacts: record them as a
+    Р- entry in docs/assumptions-open-questions.md + PRD changelog edit.
+    Engineering decisions get a new ADR in docs/adr/.
+  - docs/glossary.md is the single source of terminology.
+
+  Language: openspec artifacts (proposals, specs, tasks) are written in
+  English; user-facing strings in the product are Ukrainian.
+
+rules:
+  proposal:
+    - One change = one capability slice from docs/mvp-capability-plan.md =
+      one unit of agentic work = one PR. A proposal is created from a
+      referenced plan item; link the slice ID in the proposal.
+    - Every slice is vertical (UI -> API -> DB, full contour) and
+      self-contained - deployable to production immediately after merge.
+    - Reference the PRD requirement codes (FR-*/NFR-*) the slice covers.
+    - Include a "Non-goals" section; scope that does not fit the slice is
+      cut, not stretched.
+  tasks:
+    - Final tasks of every change, in order — (1) run `npm run verify`
+      (format, lint, typecheck, fallow audit, tests, build - all
+      blocking); (2) browser validation of the slice acceptance scenarios
+      via Playwright (web-e2e); (3) archive the change; (4) confirm
+      `npx openspec list` shows no active changes before opening the PR.
