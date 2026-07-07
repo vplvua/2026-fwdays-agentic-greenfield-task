@@ -1,0 +1,16 @@
+// Prisma schema — Сервіс-деск Mini (TC-STACK-01: Prisma + MySQL).
+// Intentionally empty of models in S-01 (walking skeleton): the baseline
+// migration only establishes the migration pipeline; S-02 adds the first
+// real models (user, otp_code). See api/prisma/README.md.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  // The api app is CommonJS (webpack build + jest); the default ESM output
+  // uses import.meta and breaks both
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}

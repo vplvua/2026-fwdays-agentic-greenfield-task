@@ -31,6 +31,9 @@ obj/
 
 
 
+# Generated Prisma client (npx prisma generate)
+api/src/generated/
+
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs
