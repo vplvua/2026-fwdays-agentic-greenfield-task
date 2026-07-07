@@ -1,0 +1,24 @@
+import { test, expect } from '@playwright/test';
+
+// S-01 acceptance: the walking skeleton is alive — SPA renders and
+// /api/health is green against a real MySQL (see openspec app-skeleton spec).
+test.describe('S-01 walking skeleton', () => {
+  test('hello page renders and shows green health status', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page).toHaveTitle('Сервіс-деск Mini');
+    await expect(page.getByText('Вітаємо!')).toBeVisible();
+    await expect(page.getByRole('status')).toHaveText(
+      /Сервіс працює, база даних доступна/,
+    );
+  });
+
+  test('health endpoint reports ok/up through the app origin', async ({
+    request,
+  }) => {
+    const res = await request.get('/api/health');
+
+    expect(res.status()).toBe(200);
+    expect(await res.json()).toEqual({ status: 'ok', db: 'up' });
+  });
+});
