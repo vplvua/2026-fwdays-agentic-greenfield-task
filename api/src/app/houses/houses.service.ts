@@ -102,6 +102,9 @@ export class HousesService {
     const data: { name?: string; note?: string | null } = {};
     if (input && 'name' in input) data.name = normalizeName(input.name);
     if (input && 'note' in input) data.note = normalizeNote(input.note);
+    // an effectively empty patch is a no-op: updateMany with empty data
+    // reports count 0 and would wrongly 404 the owner (S-04 smoke finding)
+    if (Object.keys(data).length === 0) return this.get(userId, rawId);
     // updateMany applies the owner filter atomically; count 0 → 404
     const { count } = await this.prisma.house.updateMany({
       where: { id, userId },

@@ -146,6 +146,14 @@ describe('HousesService', () => {
         service.update(OWNER, '5', { name: 'Дім' }),
       ).rejects.toMatchObject({ response: { code: 'HOUSE_NOT_FOUND' } });
     });
+
+    it('treats a patch with no known fields as a no-op read (S-04 smoke finding)', async () => {
+      const house = { id: BigInt(5) };
+      prismaMock.house.findFirst.mockResolvedValue(house);
+      await expect(service.update(OWNER, '5', {})).resolves.toBe(house);
+      // no empty updateMany: it would report count 0 and 404 the owner
+      expect(prismaMock.house.updateMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('remove', () => {

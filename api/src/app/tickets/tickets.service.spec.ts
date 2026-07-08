@@ -259,6 +259,16 @@ describe('TicketsService', () => {
       expect(data).toEqual({ title: 'Нова назва' });
     });
 
+    it('treats a patch with no writable fields as a no-op read (S-04 smoke finding)', async () => {
+      const ticket = { id: BigInt(5) };
+      prismaMock.ticket.findFirst.mockResolvedValue(ticket);
+      await expect(
+        service.update(OWNER, '5', { status: 'CLOSED' } as never),
+      ).resolves.toBe(ticket);
+      // no empty updateMany: it would report count 0 and 404 the owner
+      expect(prismaMock.ticket.updateMany).not.toHaveBeenCalled();
+    });
+
     it('re-checks house ownership when houseId changes', async () => {
       prismaMock.house.findFirst.mockResolvedValue(null); // foreign or missing
       await expect(

@@ -260,6 +260,9 @@ export class TicketsService {
     if ('houseId' in body) {
       data.houseId = await this.resolveOwnHouseId(userId, body.houseId);
     }
+    // an effectively empty patch (e.g. only an ignored status) is a no-op:
+    // updateMany with empty data reports count 0 and would 404 the owner
+    if (Object.keys(data).length === 0) return this.get(userId, rawId);
     try {
       // updateMany applies the owner filter atomically; count 0 → 404
       const { count } = await this.prisma.ticket.updateMany({
