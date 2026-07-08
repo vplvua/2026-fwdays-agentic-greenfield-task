@@ -25,13 +25,13 @@
 
 ## 4. Slice-level verification (DoD order)
 
-- [ ] 4.1 All task checkboxes above are `[x]`
-- [ ] 4.2 `npm run verify` passes (format, lint, typecheck, design:check, fallow audit, openspec validate, tests, build) — runs as the pre-commit hook on every slice commit
-- [ ] 4.3 Smoke test on the real local MySQL: create/edit a ticket via the running API with two users — defaults (`NEW`/`NORMAL`), number #N, 404 parity for foreign ticket and foreign houseId, due-date set/clear round-trip, house-with-ticket delete → 409, house-without-tickets delete still works
-- [ ] 4.4 api-e2e suite: CRUD happy path, defaults + #N, two-user isolation (GET/PATCH foreign ticket; create with a foreign houseId), dueDate set/clear, status ignored on PATCH, FR-HOUSE-02 refusal (409) and successful delete without tickets, 401 without cookie, DELETE /api/tickets/:id not exposed
-- [ ] 4.5 Playwright e2e (web-e2e), from the plan acceptance scenarios: create ticket from UI (house from directory) → card with #N and «Нова»; edit executor + due date from the card → card updated; houses screen refuses deleting the house with the ticket
-- [ ] 4.6 Adversarial review by `slice-reviewer` (ADR-0010): freeze the range at an explicit end SHA (never `..HEAD`), no commits until the verdict; critical/high fixed + re-verify, medium/low dispositions recorded for the retro
-- [ ] 4.7 Launch-and-look: walk the slice happy path by eye (home → «Нова заявка» → create → card → edit → card; empty-directory hint; mobile viewport pass) and note the fact in current-state
-- [ ] 4.8 Archive the change (`/opsx:archive`), confirm `npx openspec list` is empty, then `npx prettier --write openspec/specs/**/*.md` (the CLI writes synced specs unformatted)
-- [ ] 4.9 Update `docs/current-state.md` (phase/done/next/blockers) and `docs/traceability-matrix.md` (FR-TICKET-01/02/04 rows; FR-HOUSE-02 test column flips from "S-04" to the actual test; FR-ACCESS-01 gains the tickets isolation test)
-- [ ] 4.10 Session retrospective via `/slice-retro` → `docs/cycles/S-04.md` — immediately after the archive commit
+- [x] 4.1 All task checkboxes above are `[x]`
+- [x] 4.2 `npm run verify` passes (format, lint, typecheck, design:check, fallow audit, openspec validate, tests, build) — runs as the pre-commit hook on every slice commit
+- [x] 4.3 Smoke test on the real local MySQL: create/edit a ticket via the running API with two users — defaults (`NEW`/`NORMAL`), number #N, 404 parity for foreign ticket and foreign houseId, due-date set/clear round-trip, house-with-ticket delete → 409, house-without-tickets delete still works
+- [x] 4.4 api-e2e suite: CRUD happy path, defaults + #N, two-user isolation (GET/PATCH foreign ticket; create with a foreign houseId), dueDate set/clear, status ignored on PATCH, FR-HOUSE-02 refusal (409) and successful delete without tickets, 401 without cookie, DELETE /api/tickets/:id not exposed
+- [x] 4.5 Playwright e2e (web-e2e), from the plan acceptance scenarios: create ticket from UI (house from directory) → card with #N and «Нова»; edit executor + due date from the card → card updated; houses screen refuses deleting the house with the ticket
+- [x] 4.6 Adversarial review by `slice-reviewer` (ADR-0010): freeze the range at an explicit end SHA (never `..HEAD`), no commits until the verdict; critical/high fixed + re-verify, medium/low dispositions recorded for the retro
+- [x] 4.7 Launch-and-look: walk the slice happy path by eye (home → «Нова заявка» → create → card → edit → card; empty-directory hint; mobile viewport pass) and note the fact in current-state
+- [x] 4.8 Archive the change (`/opsx:archive`), confirm `npx openspec list` is empty, then `npx prettier --write openspec/specs/**/*.md` (the CLI writes synced specs unformatted)
+- [x] 4.9 Update `docs/current-state.md` (phase/done/next/blockers) and `docs/traceability-matrix.md` (FR-TICKET-01/02/04 rows; FR-HOUSE-02 test column flips from "S-04" to the actual test; FR-ACCESS-01 gains the tickets isolation test)
+- [x] 4.10 Session retrospective via `/slice-retro` → `docs/cycles/S-04.md` — immediately after the archive commit
