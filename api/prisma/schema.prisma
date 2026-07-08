@@ -1,7 +1,5 @@
 // Prisma schema — Сервіс-деск Mini (TC-STACK-01: Prisma + MySQL).
-// Intentionally empty of models in S-01 (walking skeleton): the baseline
-// migration only establishes the migration pipeline; S-02 adds the first
-// real models (user, otp_code). See api/prisma/README.md.
+// Entities follow PRD §9.1; auth tables per ADR-0004 and s02-otp-auth D1.
 
 generator client {
   provider     = "prisma-client"
@@ -13,4 +11,44 @@ generator client {
 
 datasource db {
   provider = "mysql"
+}
+
+model User {
+  id        BigInt    @id @default(autoincrement())
+  phone     String    @unique @db.VarChar(13)
+  name      String?   @db.VarChar(120)
+  createdAt DateTime  @default(now()) @map("created_at")
+  sessions  Session[]
+
+  @@map("user")
+}
+
+// Transit store for OTP delivery and rate limiting (ADR-0004). Send limits
+// (1/60s, 5/24h) are derived by querying rows per phone — the table doubles
+// as the send log; rows older than 24h are dropped by the cleanup job.
+model OtpCode {
+  id         BigInt    @id @default(autoincrement())
+  phone      String    @db.VarChar(13)
+  codeHash   String    @map("code_hash") @db.VarChar(64)
+  expiresAt  DateTime  @map("expires_at")
+  attempts   Int       @default(0)
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([phone, createdAt])
+  @@map("otp_code")
+}
+
+// Server-side session store (NFR-SEC-01): the cookie carries an opaque
+// random token; only its SHA-256 hash is persisted.
+model Session {
+  id        BigInt   @id @default(autoincrement())
+  tokenHash String   @unique @map("token_hash") @db.VarChar(64)
+  userId    BigInt   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("session")
 }

@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
 // Fail fast: the pool's own timeouts add up to ~10s when MySQL is down
@@ -13,6 +14,8 @@ export const HEALTH_DB_TIMEOUT_MS = 2_000;
 
 // GET /api/health (NFR-OBS-01): Railway healthcheck target. An app that
 // cannot reach MySQL is not serving the product, hence 503 (design D3).
+// Public: the healthcheck must work without a session (S-02 D5 allowlist).
+@Public()
 @Controller('health')
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);
