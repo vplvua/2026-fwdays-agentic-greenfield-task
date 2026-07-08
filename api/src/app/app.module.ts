@@ -4,6 +4,7 @@ import { HealthModule } from './health/health.module';
 import { HousesModule } from './houses/houses.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SpaModule } from './spa/spa.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { SpaModule } from './spa/spa.module';
     AuthModule,
     HealthModule,
     HousesModule,
+    TicketsModule,
     SpaModule.forRoot(),
   ],
 })

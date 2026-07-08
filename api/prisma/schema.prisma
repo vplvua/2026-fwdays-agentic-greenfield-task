@@ -20,6 +20,7 @@ model User {
   createdAt DateTime  @default(now()) @map("created_at")
   sessions  Session[]
   houses    House[]
+  tickets   Ticket[]
 
   @@map("user")
 }
@@ -35,9 +36,67 @@ model House {
   note      String?  @db.VarChar(1000)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  tickets   Ticket[]
 
   @@index([userId])
   @@map("house")
+}
+
+// Fixed category list, PRD §5.2. English keys on the wire (locale-free API,
+// S-02 D6); Ukrainian labels live only in the SPA (ticket-labels.ts).
+enum TicketCategory {
+  PLUMBING // Сантехніка
+  HEATING // Опалення / теплопостачання
+  ELECTRICITY // Електропостачання
+  ELEVATOR // Ліфт
+  ROOF_FACADE // Покрівля та фасад
+  COMMON_AREAS // Під'їзд і МЗК
+  GROUNDS // Прибудинкова територія / благоустрій
+  ACCESS_SYSTEMS // Домофон / шлагбаум / відеоспостереження
+  OTHER // Інше
+}
+
+// PRD §5.3, default NORMAL («Звичайна»).
+enum TicketPriority {
+  EMERGENCY // Аварійна
+  HIGH // Висока
+  NORMAL // Звичайна
+}
+
+// PRD §5.1 lifecycle. S-04 only creates tickets in NEW; transitions and
+// their validation arrive in S-05.
+enum TicketStatus {
+  NEW // Нова
+  IN_PROGRESS // В роботі
+  DONE // Виконана
+  CLOSED // Закрита
+  REJECTED // Відхилена
+}
+
+// Ticket (FR-TICKET-01/02/04): owner-scoped, id doubles as the human-visible
+// number #N (PRD §9.1). house FK is Restrict — the DB backstop for
+// FR-HOUSE-02 (the deterministic check lives in houses.service). due_date is
+// a calendar date (PRD §5.4), wire format YYYY-MM-DD — no timezone drift.
+model Ticket {
+  id             BigInt         @id @default(autoincrement())
+  userId         BigInt         @map("user_id")
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  houseId        BigInt         @map("house_id")
+  house          House          @relation(fields: [houseId], references: [id], onDelete: Restrict)
+  title          String         @db.VarChar(255)
+  description    String?        @db.Text
+  category       TicketCategory
+  priority       TicketPriority @default(NORMAL)
+  status         TicketStatus   @default(NEW)
+  requesterName  String?        @map("requester_name") @db.VarChar(255)
+  requesterPhone String?        @map("requester_phone") @db.VarChar(32)
+  executor       String?        @db.VarChar(255)
+  dueDate        DateTime?      @map("due_date") @db.Date
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("ticket")
 }
 
 // Transit store for OTP delivery and rate limiting (ADR-0004). Send limits

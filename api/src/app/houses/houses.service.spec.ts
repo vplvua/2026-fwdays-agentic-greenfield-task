@@ -1,3 +1,4 @@
+import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { HouseError } from './house-errors';
 import { HousesService } from './houses.service';
@@ -12,6 +13,9 @@ describe('HousesService', () => {
       create: jest.fn(),
       updateMany: jest.fn(),
       deleteMany: jest.fn(),
+    },
+    ticket: {
+      count: jest.fn(),
     },
   };
   let service: HousesService;
@@ -145,15 +149,42 @@ describe('HousesService', () => {
   });
 
   describe('remove', () => {
-    it('deletes only within the owner scope (FR-HOUSE-02 happy path)', async () => {
+    it('deletes a house without tickets within the owner scope (FR-HOUSE-02 happy path)', async () => {
+      prismaMock.ticket.count.mockResolvedValue(0);
       prismaMock.house.deleteMany.mockResolvedValue({ count: 1 });
       await service.remove(OWNER, '5');
+      expect(prismaMock.ticket.count).toHaveBeenCalledWith({
+        where: { houseId: BigInt(5), house: { userId: OWNER } },
+      });
       expect(prismaMock.house.deleteMany).toHaveBeenCalledWith({
         where: { id: BigInt(5), userId: OWNER },
       });
     });
 
+    it('refuses to delete a house with tickets (FR-HOUSE-02)', async () => {
+      prismaMock.ticket.count.mockResolvedValue(1);
+      const err = await service.remove(OWNER, '5').catch((e) => e);
+      expect(err).toBeInstanceOf(HouseError);
+      expect(err.getStatus()).toBe(409);
+      expect(err.getResponse()).toMatchObject({ code: 'HOUSE_HAS_TICKETS' });
+      expect(prismaMock.house.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('maps the FK Restrict backstop (P2003) to the same refusal', async () => {
+      prismaMock.ticket.count.mockResolvedValue(0); // race: ticket created after the count
+      prismaMock.house.deleteMany.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('FK constraint', {
+          code: 'P2003',
+          clientVersion: 'test',
+        }),
+      );
+      await expect(service.remove(OWNER, '5')).rejects.toMatchObject({
+        response: { code: 'HOUSE_HAS_TICKETS' },
+      });
+    });
+
     it('answers 404 when the row is foreign or missing', async () => {
+      prismaMock.ticket.count.mockResolvedValue(0);
       prismaMock.house.deleteMany.mockResolvedValue({ count: 0 });
       await expect(service.remove(OWNER, '5')).rejects.toMatchObject({
         response: { code: 'HOUSE_NOT_FOUND' },

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../generated/prisma/client';
 import type { HouseModel } from '../../generated/prisma/models';
 import { PrismaService } from '../prisma/prisma.service';
 import { HouseError } from './house-errors';
@@ -46,6 +47,12 @@ function parseHouseId(raw: string): bigint | null {
 
 const notFound = () =>
   new HouseError('HOUSE_NOT_FOUND', 'House does not exist');
+
+const hasTickets = () =>
+  new HouseError(
+    'HOUSE_HAS_TICKETS',
+    'House has tickets and cannot be deleted',
+  );
 
 export interface HouseInput {
   name?: unknown;
@@ -104,14 +111,30 @@ export class HousesService {
     return this.get(userId, rawId);
   }
 
-  // FR-HOUSE-02: the "has tickets" refusal (HOUSE_HAS_TICKETS, 409) becomes
-  // enforceable in S-04 when the ticket table adds its FK (design D3).
+  // FR-HOUSE-02: a house with at least one ticket cannot be deleted. The
+  // count check is the deterministic, testable path; the FK onDelete:
+  // Restrict is the race backstop — a ticket created between the count and
+  // the delete surfaces as P2003 and maps to the same refusal (S-04 D3).
   async remove(userId: bigint, rawId: string): Promise<void> {
     const id = parseHouseId(rawId);
     if (!id) throw notFound();
-    const { count } = await this.prisma.house.deleteMany({
-      where: { id, userId },
+    const tickets = await this.prisma.ticket.count({
+      where: { houseId: id, house: { userId } },
     });
-    if (count === 0) throw notFound();
+    if (tickets > 0) throw hasTickets();
+    try {
+      const { count } = await this.prisma.house.deleteMany({
+        where: { id, userId },
+      });
+      if (count === 0) throw notFound();
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw hasTickets();
+      }
+      throw error;
+    }
   }
 }
