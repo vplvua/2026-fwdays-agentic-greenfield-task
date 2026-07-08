@@ -18,15 +18,15 @@
 | FR-HOUSE-02 | S-03 (тест — S-04) | [house-directory](../openspec/specs/house-directory/spec.md) «House deletion is blocked while tickets reference it» | `houses.service.spec.ts` (відмова: count і P2003) · `api-e2e/tickets.spec.ts` (409 з заявкою, 200 без) · `web-e2e/s04-ticket-crud.spec.ts` (відмова в UI) | відмова HOUSE_HAS_TICKETS і видалення порожнього будинку: смок на реальній MySQL (2026-07-08) |
 | FR-TICKET-01 | S-04 | [ticket-crud](../openspec/specs/ticket-crud/spec.md) «User can create a ticket», «User can edit ticket attributes», «SPA provides ticket form and card» | `tickets.service.spec.ts` (матриця валідації) · `tickets-facade.spec.ts` · `api-e2e/tickets.spec.ts` (create/edit, дефолт «Звичайна») · `web-e2e/s04-ticket-crud.spec.ts` | створення з форми → картка; редагування виконавця/терміну очима + мобільний вʼюпорт: локально (2026-07-08) |
 | FR-TICKET-02 | S-04 | [ticket-crud](../openspec/specs/ticket-crud/spec.md) «New ticket starts in status Нова with a sequential number» | `api-e2e/tickets.spec.ts` (наскрізний #N, строго зростає) | #N видно в картці (#32 у launch-and-look, 2026-07-08) |
-| FR-TICKET-03 | S-05 | — | — | — |
+| FR-TICKET-03 | S-05 | [ticket-feed](../openspec/specs/ticket-feed/spec.md) «Field changes are recorded as system events» | `tickets.service.spec.ts` (діфф: змінене/те саме/невідстежуване, снапшоти назв будинку) · `api-e2e/ticket-lifecycle.spec.ts` (події PATCH, no-op) | зміна виконавця/терміну з форми → події у стрічці очима (2026-07-08) |
 | FR-TICKET-04 | S-04 | [ticket-crud](../openspec/specs/ticket-crud/spec.md) «Ticket records creation time and owner; no deletion» | `tickets.service.spec.ts` · `api-e2e/tickets.spec.ts` (createdAt/власник автоматично; DELETE не існує, заявка живе) | дата створення в картці; DELETE → 404 у смоку (2026-07-08) |
-| FR-STATUS-01 | S-05 | — | — | — |
-| FR-STATUS-02 | S-05 | — | — | — |
-| FR-STATUS-03 | S-05 | — | — | — |
-| FR-DUE-01 | S-05 | — | — | — |
+| FR-STATUS-01 | S-05 | [ticket-lifecycle](../openspec/specs/ticket-lifecycle/spec.md) «Ticket status follows the PRD §5.1 lifecycle» | `tickets.service.spec.ts` (таблиця ALLOWED_TRANSITIONS) · `api-e2e/ticket-lifecycle.spec.ts` (повний цикл) | статус завжди один із 5, «Нова» після створення: launch-and-look (2026-07-08) |
+| FR-STATUS-02 | S-05 | [ticket-lifecycle](../openspec/specs/ticket-lifecycle/spec.md) «Transitions go through a dedicated endpoint», «Ticket card offers only allowed transitions» | `tickets.service.spec.ts` (легальні/заборонені/stale) · `ticket-actions.spec.ts` (кнопки з allowedTransitions) · `api-e2e/ticket-lifecycle.spec.ts` (409, allowedTransitions) · `web-e2e/s05-ticket-lifecycle-feed.spec.ts` | термінальна картка без кнопок; Закрита → В роботі → 409 у смоку (2026-07-08) |
+| FR-STATUS-03 | S-05 | [ticket-lifecycle](../openspec/specs/ticket-lifecycle/spec.md) «Every status change is recorded as a system event» | `tickets.service.spec.ts` (подія в транзакції, відмова без події) · `api-e2e/ticket-lifecycle.spec.ts` (хто/коли/звідки/куди) | подія «Статус: Нова → В роботі» у стрічці очима (2026-07-08) |
+| FR-DUE-01 | S-05 (частина — S-04) | [ticket-crud](../openspec/specs/ticket-crud/spec.md) «User can edit ticket attributes» (set/clear) · [ticket-feed](../openspec/specs/ticket-feed/spec.md) — подія на set/clear | `tickets.service.spec.ts` · `api-e2e/tickets.spec.ts` (set/clear) · `api-e2e/ticket-lifecycle.spec.ts` (події set/clear) | термін задано і очищено, обидві події у стрічці: смок (2026-07-08) |
 | FR-DUE-02 | S-06 | — | — | — |
-| FR-FEED-01 | S-05 | — | — | — |
-| FR-FEED-02 | S-05 | — | — | — |
+| FR-FEED-01 | S-05 | [ticket-feed](../openspec/specs/ticket-feed/spec.md) «Ticket has a single append-only chronological feed», «User can append a text note» | `tickets.service.spec.ts` (валідація запису) · `tickets-facade.spec.ts` · `api-e2e/ticket-lifecycle.spec.ts` (хронологія, append-only, немає update/delete) · `web-e2e/s05-ticket-lifecycle-feed.spec.ts` (запис із картки) | запис додано з картки, автор і час видно: launch-and-look (2026-07-08) |
+| FR-FEED-02 | S-05 (вкладення — S-07) | [ticket-feed](../openspec/specs/ticket-feed/spec.md) «SPA shows the feed in the ticket card» + системні події зі статусів/полів | `ticket-feed.spec.ts` (візуальна відмінність, eventText) · `api-e2e/ticket-lifecycle.spec.ts` | записи-бульбашки vs події-рядки з іконкою очима, 390×844 (2026-07-08) |
 | FR-ATTACH-01 | S-07 | — | — | — |
 | FR-ATTACH-02 | S-07 | — | — | — |
 | FR-ATTACH-03 | S-07 | — | — | — |
@@ -34,7 +34,7 @@
 | FR-LIST-02 | S-06 | — | — | — |
 | FR-LIST-03 | S-06 | — | — | — |
 | FR-LIST-04 | S-06 | — | — | — |
-| FR-ACCESS-01 | S-03 (наскрізно S-04…S-07) | [house-directory](../openspec/specs/house-directory/spec.md) «Foreign or missing house answers in 404 style» · [ticket-crud](../openspec/specs/ticket-crud/spec.md) «Foreign or missing ticket answers in 404 style» (+ чужий houseId) | `houses.service.spec.ts` · `tickets.service.spec.ts` (404-парність) · `api-e2e/houses.spec.ts` · `api-e2e/tickets.spec.ts` (два користувачі: чужа заявка і чужий houseId → ідентичні тіла) | смок: чужа заявка/чужий houseId → 404 як для неіснуючих (2026-07-08) |
+| FR-ACCESS-01 | S-03 (наскрізно S-04…S-07) | [house-directory](../openspec/specs/house-directory/spec.md) «Foreign or missing house answers in 404 style» · [ticket-crud](../openspec/specs/ticket-crud/spec.md) «Foreign or missing ticket answers in 404 style» (+ чужий houseId) · [ticket-lifecycle](../openspec/specs/ticket-lifecycle/spec.md)/[ticket-feed](../openspec/specs/ticket-feed/spec.md) — 404-парність transition/feed/notes | `houses.service.spec.ts` · `tickets.service.spec.ts` (404-парність) · `api-e2e/houses.spec.ts` · `api-e2e/tickets.spec.ts` · `api-e2e/ticket-lifecycle.spec.ts` (чужі transition/feed/notes → ідентичні тіла) | смок: чужа заявка/чужий houseId → 404 як для неіснуючих (2026-07-08) |
 | NFR-PERF-01 | S-06 | — | — | — |
 | NFR-SEC-01 | S-02 | [otp-auth](../openspec/specs/otp-auth/spec.md) «Session is a durable httpOnly cookie…», «Phones and codes never appear in logs…» | `api-e2e/auth.spec.ts` (атрибути cookie, hash у БД) · `session.service.spec.ts` (token hash) | смок: `otp_code.code_hash`/`session.token_hash` — лише хеші (2026-07-08) |
 | NFR-SEC-02 | S-02 | [otp-auth](../openspec/specs/otp-auth/spec.md) — усі ліміти в сценаріях API-рівня | `api-e2e/auth.spec.ts` — ліміти через прямі HTTP-виклики, повз UI | curl повз UI → 429/400: локально (2026-07-08) |
@@ -54,3 +54,4 @@
 | 2026-07-08 | **v1.2:** S-02 закрито — заповнено FR-AUTH-01…04, NFR-SEC-01/02; spec `otp-auth`; demo checks локальні, прод — після деплою з TurboSMS. |
 | 2026-07-08 | **v1.3:** S-03 закрито — заповнено FR-HOUSE-01/02, FR-ACCESS-01, NFR-SEC-03; spec `house-directory`; тест відмови видалення (FR-HOUSE-02) відкладено до S-04 (design D3). |
 | 2026-07-08 | **v1.4:** S-04 закрито — заповнено FR-TICKET-01/02/04; spec `ticket-crud`; FR-HOUSE-02 отримав тест відмови (борг S-03 закрито); FR-ACCESS-01/NFR-SEC-03 розширено ізоляцією заявок і houseId. |
+| 2026-07-08 | **v1.5:** S-05 закрито — заповнено FR-STATUS-01…03, FR-FEED-01/02, FR-TICKET-03, FR-DUE-01; specs `ticket-lifecycle` + `ticket-feed`; FR-ACCESS-01 розширено 404-парністю transition/feed/notes. |
