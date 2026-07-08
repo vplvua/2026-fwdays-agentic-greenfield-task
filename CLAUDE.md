@@ -76,7 +76,7 @@ Stop any background `nx serve` before running `nx e2e api-e2e`: the e2e target w
 
 ## Quality gates
 
-`npm run verify` is the blocking ritual: `format:check` → `lint` → `typecheck` → `fallow audit` → `openspec validate --all --strict` → `test` → `build`. E2e is intentionally NOT part of it (run targeted `nx e2e` specs per slice instead).
+`npm run verify` is the blocking ritual: `format:check` → `lint` → `typecheck` → `design:check` (no hardcoded colors in `web/src` styles — Material tokens `var(--mat-sys-*)` only; `tools/check-design-tokens.mjs`, В-04) → `fallow audit` → `openspec validate --all --strict` → `test` → `build`. E2e is intentionally NOT part of it (run targeted `nx e2e` specs per slice instead).
 
 Claude Code hooks (`.claude/settings.json`, scripts in `.claude/hooks/`) enforce this automatically:
 

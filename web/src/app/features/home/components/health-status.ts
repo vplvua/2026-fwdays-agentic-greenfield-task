@@ -42,7 +42,9 @@ import { HealthDto } from '../data/health.model';
     }
 
     .dot-ok {
-      background: #1b873b;
+      /* M3 has no "success" system token; primary reads as the theme's
+         healthy state (В-04: no hardcoded colors) */
+      background: var(--mat-sys-primary);
     }
 
     .dot-error {

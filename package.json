@@ -10,7 +10,8 @@
     "typecheck": "tsc -p api/tsconfig.app.json --noEmit && tsc -p api/tsconfig.spec.json --noEmit && tsc -p web/tsconfig.app.json --noEmit && tsc -p web/tsconfig.spec.json --noEmit && tsc -p api-e2e/tsconfig.spec.json --noEmit && tsc -p web-e2e/tsconfig.json --noEmit",
     "test": "nx run-many -t test",
     "build": "nx run-many -t build",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && fallow audit && openspec validate --all --strict && npm run test && npm run build"
+    "design:check": "node tools/check-design-tokens.mjs",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run design:check && fallow audit && openspec validate --all --strict && npm run test && npm run build"
   },
   "devDependencies": {
     "@angular-devkit/core": "~21.2.0",

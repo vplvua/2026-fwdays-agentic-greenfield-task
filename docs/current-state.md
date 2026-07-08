@@ -35,11 +35,10 @@
 
 ## Next 1-2 tasks
 
-- [ ] Процесний трек В-04 (**перед S-03**, рішення ретро S-01): design-check
-      у `verify` — перевірка, що UI-код використовує токени теми Material
-      (`var(--mat-sys-*)`) замість хардкоду кольорів/розмірів
 - [ ] `/opsx:propose` S-03 «Довідник будинків» (FR-HOUSE-01/02,
-      FR-ACCESS-01, NFR-SEC-03 — перше справжнє доменне CRUD з ізоляцією)
+      FR-ACCESS-01, NFR-SEC-03 — перше справжнє доменне CRUD з ізоляцією;
+      + редирект авторизованого з /login, план v1.6). В-04 (design-check
+      у verify) виконано 2026-07-08 — `tools/check-design-tokens.mjs`
 
 ## Blockers
 
