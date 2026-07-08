@@ -3,7 +3,12 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { TicketsApi } from './tickets-api';
 import { TicketsFacade } from './tickets-facade';
-import { TicketDto, fromWireDate, toWireDate } from './ticket.model';
+import {
+  FeedItemDto,
+  TicketDto,
+  fromWireDate,
+  toWireDate,
+} from './ticket.model';
 
 const TICKET: TicketDto = {
   id: 12,
@@ -14,6 +19,7 @@ const TICKET: TicketDto = {
   category: 'PLUMBING',
   priority: 'NORMAL',
   status: 'NEW',
+  allowedTransitions: ['IN_PROGRESS', 'REJECTED'],
   requesterName: null,
   requesterPhone: null,
   executor: null,
@@ -34,6 +40,28 @@ const INPUT = {
   dueDate: null,
 };
 
+const NOTE: FeedItemDto = {
+  id: 1,
+  type: 'NOTE',
+  authorId: 1,
+  authorName: 'Іван',
+  text: 'Дзвонив майстру',
+  field: null,
+  oldValue: null,
+  newValue: null,
+  createdAt: '2026-07-08T10:00:00.000Z',
+};
+
+const STATUS_EVENT: FeedItemDto = {
+  ...NOTE,
+  id: 2,
+  type: 'EVENT',
+  text: null,
+  field: 'STATUS',
+  oldValue: 'NEW',
+  newValue: 'IN_PROGRESS',
+};
+
 function apiError(status: number, code: string): HttpErrorResponse {
   return new HttpErrorResponse({ status, error: { code, message: code } });
 }
@@ -46,10 +74,11 @@ function setup(api: Partial<TicketsApi>): TicketsFacade {
 }
 
 describe('TicketsFacade', () => {
-  it('load fills the ticket (FR-TICKET-01)', async () => {
-    const facade = setup({ get: () => of(TICKET) });
+  it('load fills the ticket and its feed (FR-TICKET-01, FR-FEED-01)', async () => {
+    const facade = setup({ get: () => of(TICKET), getFeed: () => of([NOTE]) });
     await facade.load(12);
     expect(facade.ticket()).toEqual(TICKET);
+    expect(facade.feed()).toEqual([NOTE]);
     expect(facade.loading()).toBe(false);
     expect(facade.error()).toBeNull();
   });
@@ -57,9 +86,11 @@ describe('TicketsFacade', () => {
   it('load of a foreign/missing ticket maps the 404 code (FR-ACCESS-01)', async () => {
     const facade = setup({
       get: () => throwError(() => apiError(404, 'TICKET_NOT_FOUND')),
+      getFeed: () => throwError(() => apiError(404, 'TICKET_NOT_FOUND')),
     });
     await facade.load(999);
     expect(facade.ticket()).toBeNull();
+    expect(facade.feed()).toEqual([]);
     expect(facade.error()).toBe('Заявку не знайдено');
   });
 
@@ -97,13 +128,74 @@ describe('TicketsFacade', () => {
     expect(facade.error()).toBe('Вкажіть назву заявки');
   });
 
-  it('reset clears the held ticket and error (create mode starts blank)', async () => {
-    const facade = setup({ get: () => of(TICKET) });
+  it('transition swaps in the fresh card payload and reloads the feed (FR-STATUS-02/03)', async () => {
+    const moved: TicketDto = {
+      ...TICKET,
+      status: 'IN_PROGRESS',
+      allowedTransitions: ['DONE', 'REJECTED'],
+    };
+    let feedReads = 0;
+    const facade = setup({
+      get: () => of(TICKET),
+      getFeed: () => (feedReads++ === 0 ? of([]) : of([STATUS_EVENT])),
+      transition: () => of(moved),
+    });
+    await facade.load(12);
+    await expect(facade.transition(12, 'IN_PROGRESS')).resolves.toBe(true);
+    expect(facade.ticket()).toEqual(moved);
+    expect(facade.feed()).toEqual([STATUS_EVENT]);
+    expect(facade.pending()).toBe(false);
+  });
+
+  it('forbidden transition maps the 409 code and keeps the state (FR-STATUS-02)', async () => {
+    const facade = setup({
+      get: () => of(TICKET),
+      getFeed: () => of([]),
+      transition: () =>
+        throwError(() => apiError(409, 'TICKET_TRANSITION_FORBIDDEN')),
+    });
+    await facade.load(12);
+    await expect(facade.transition(12, 'IN_PROGRESS')).resolves.toBe(false);
+    expect(facade.ticket()).toEqual(TICKET);
+    expect(facade.error()).toBe(
+      'Цей перехід статусу неможливий — оновіть сторінку',
+    );
+    expect(facade.pending()).toBe(false);
+  });
+
+  it('addNote reloads the feed and keeps the ticket (FR-FEED-01)', async () => {
+    let feedReads = 0;
+    const facade = setup({
+      get: () => of(TICKET),
+      getFeed: () => (feedReads++ === 0 ? of([]) : of([NOTE])),
+      addNote: () => of(NOTE),
+    });
+    await facade.load(12);
+    await expect(facade.addNote(12, 'Дзвонив майстру')).resolves.toBe(true);
+    expect(facade.feed()).toEqual([NOTE]);
+    expect(facade.ticket()).toEqual(TICKET);
+  });
+
+  it('addNote failure surfaces the validation copy and returns false', async () => {
+    const facade = setup({
+      addNote: () => throwError(() => apiError(400, 'TICKET_NOTE_INVALID')),
+    });
+    await expect(facade.addNote(12, '')).resolves.toBe(false);
+    expect(facade.error()).toBe('Введіть текст запису');
+  });
+
+  it('reset clears the held ticket, feed and error (create mode starts blank)', async () => {
+    const facade = setup({
+      get: () => of(TICKET),
+      getFeed: () => of([NOTE]),
+    });
     await facade.load(12);
     expect(facade.ticket()).toEqual(TICKET);
+    expect(facade.feed()).toEqual([NOTE]);
 
     facade.reset();
     expect(facade.ticket()).toBeNull();
+    expect(facade.feed()).toEqual([]);
     expect(facade.error()).toBeNull();
     expect(facade.pending()).toBe(false);
   });

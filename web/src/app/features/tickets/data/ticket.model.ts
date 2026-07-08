@@ -34,8 +34,31 @@ export interface TicketDto extends TicketInput {
   id: number; // doubles as the human-visible number #N (FR-TICKET-02)
   houseName: string;
   status: TicketStatus;
+  // computed server-side from the PRD §5.1 table (FR-STATUS-02): the SPA
+  // renders transition buttons from this list and owns no transition rules
+  allowedTransitions: TicketStatus[];
   createdAt: string;
   updatedAt: string;
+}
+
+// One feed item (PRD §5.5): a NOTE carries text, an EVENT carries a
+// field/oldValue/newValue snapshot in locale-free wire values (enum keys,
+// YYYY-MM-DD dates) — ticket-labels.ts composes the Ukrainian sentence.
+export type FeedItemType = 'NOTE' | 'EVENT';
+
+export type TicketEventField =
+  'STATUS' | 'HOUSE' | 'CATEGORY' | 'PRIORITY' | 'EXECUTOR' | 'DUE_DATE';
+
+export interface FeedItemDto {
+  id: number;
+  type: FeedItemType;
+  authorId: number;
+  authorName: string | null;
+  text: string | null;
+  field: TicketEventField | null;
+  oldValue: string | null;
+  newValue: string | null;
+  createdAt: string;
 }
 
 // Field limits mirror the API validation (tickets.service.ts)
@@ -73,6 +96,9 @@ type TicketErrorCode =
   | 'TICKET_EXECUTOR_INVALID'
   | 'TICKET_DUE_DATE_INVALID'
   | 'TICKET_HOUSE_INVALID'
+  | 'TICKET_STATUS_INVALID'
+  | 'TICKET_NOTE_INVALID'
+  | 'TICKET_TRANSITION_FORBIDDEN'
   | 'TICKET_HOUSE_NOT_FOUND'
   | 'TICKET_NOT_FOUND';
 
@@ -85,6 +111,10 @@ const MESSAGES: Record<TicketErrorCode, string> = {
   TICKET_EXECUTOR_INVALID: 'Поле виконавця задовге',
   TICKET_DUE_DATE_INVALID: 'Невірна дата цільового терміну',
   TICKET_HOUSE_INVALID: 'Оберіть будинок зі списку',
+  TICKET_STATUS_INVALID: 'Невідомий статус заявки',
+  TICKET_NOTE_INVALID: 'Введіть текст запису',
+  TICKET_TRANSITION_FORBIDDEN:
+    'Цей перехід статусу неможливий — оновіть сторінку',
   TICKET_HOUSE_NOT_FOUND: 'Будинок не знайдено',
   TICKET_NOT_FOUND: 'Заявку не знайдено',
 };

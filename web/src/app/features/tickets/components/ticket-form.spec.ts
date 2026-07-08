@@ -20,6 +20,7 @@ const TICKET: TicketDto = {
   category: 'PLUMBING',
   priority: 'HIGH',
   status: 'NEW',
+  allowedTransitions: ['IN_PROGRESS', 'REJECTED'],
   requesterName: 'Іван',
   requesterPhone: '+380671112233',
   executor: null,
