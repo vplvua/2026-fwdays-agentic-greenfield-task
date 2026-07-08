@@ -39,4 +39,4 @@
 - [x] 5.7 Launch-and-look: walk the slice happy path by eye (card → взято в роботу → … → Закрита with the feed updating; note add; mobile viewport 390×844 pass) and note the fact in current-state
 - [x] 5.8 Archive the change (`/opsx:archive`), confirm `npx openspec list` is empty, then `npx prettier --write openspec/specs/**/*.md` (the CLI writes synced specs unformatted)
 - [x] 5.9 Update `docs/current-state.md` (phase/done/next/blockers) and `docs/traceability-matrix.md` (FR-STATUS-01…03, FR-FEED-01/02, FR-TICKET-03, FR-DUE-01 rows → spec/test/demo; FR-ACCESS-01 gains the feed/transition isolation tests)
-- [ ] 5.10 Session retrospective via `/slice-retro` → `docs/cycles/S-05.md` — immediately after the archive commit
+- [x] 5.10 Session retrospective via `/slice-retro` → `docs/cycles/S-05.md` — immediately after the archive commit

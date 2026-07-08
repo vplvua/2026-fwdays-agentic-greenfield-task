@@ -23,7 +23,9 @@ Both: `ChangeDetectionStrategy.OnPush` always · `@if`/`@for` with `track` ·
 no `standalone: true` (default) · `class`/`style` bindings, not
 `ngClass`/`ngStyle` · `host` object, not `@HostBinding`/`@HostListener` ·
 inline templates for small components · typed Reactive forms only
-(`Validators.required` does NOT trim — normalize before validating) ·
+(`Validators.required` does NOT trim — normalize before validating;
+`(ngSubmit)` fires only with a form directive — a bare `<form>` with just
+`[formControl]` falls through to a native page-reloading submit, S-05) ·
 `NgOptimizedImage` for static images · no direct DOM manipulation ·
 WCAG AA basics (focus, contrast, ARIA) · user-facing strings in Ukrainian.
 
