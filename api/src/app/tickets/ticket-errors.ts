@@ -9,6 +9,8 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 // TICKET_STATUS_INVALID is the 400 for a transition target that is not a
 // status at all; TICKET_TRANSITION_FORBIDDEN is the 409 for a real status
 // that the PRD §5.1 table does not allow from the current one (FR-STATUS-02).
+// TICKET_QUERY_INVALID is the 400 for malformed list query params — bad
+// filters fail loudly instead of being silently ignored (S-06 design D7).
 export type TicketErrorCode =
   | 'TICKET_TITLE_INVALID'
   | 'TICKET_DESCRIPTION_INVALID'
@@ -20,6 +22,7 @@ export type TicketErrorCode =
   | 'TICKET_HOUSE_INVALID'
   | 'TICKET_STATUS_INVALID'
   | 'TICKET_NOTE_INVALID'
+  | 'TICKET_QUERY_INVALID'
   | 'TICKET_TRANSITION_FORBIDDEN'
   | 'TICKET_HOUSE_NOT_FOUND'
   | 'TICKET_NOT_FOUND';
@@ -35,6 +38,7 @@ const STATUS_BY_CODE: Record<TicketErrorCode, HttpStatus> = {
   TICKET_HOUSE_INVALID: HttpStatus.BAD_REQUEST,
   TICKET_STATUS_INVALID: HttpStatus.BAD_REQUEST,
   TICKET_NOTE_INVALID: HttpStatus.BAD_REQUEST,
+  TICKET_QUERY_INVALID: HttpStatus.BAD_REQUEST,
   TICKET_TRANSITION_FORBIDDEN: HttpStatus.CONFLICT,
   TICKET_HOUSE_NOT_FOUND: HttpStatus.NOT_FOUND,
   TICKET_NOT_FOUND: HttpStatus.NOT_FOUND,

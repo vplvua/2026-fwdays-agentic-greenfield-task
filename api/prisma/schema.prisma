@@ -97,7 +97,10 @@ model Ticket {
   updatedAt      DateTime       @updatedAt @map("updated_at")
   feedItems      TicketFeedItem[]
 
-  @@index([userId])
+  // Composite indexes for the owner-scoped filtered list (NFR-PERF-01,
+  // S-06 design D6); [userId, status] also keeps the userId FK indexed.
+  @@index([userId, status])
+  @@index([userId, houseId])
   @@map("ticket")
 }
 

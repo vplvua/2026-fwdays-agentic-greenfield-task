@@ -14,6 +14,7 @@ import type {
 } from '../../generated/prisma/models';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketError } from './ticket-errors';
+import type { TicketListQuery } from './ticket-list-query';
 
 export const TICKET_TITLE_MAX = 255;
 export const TICKET_DESCRIPTION_MAX = 10_000;
@@ -288,6 +289,50 @@ export class TicketsService {
       if (isForeignKeyError(error)) throw houseNotFound();
       throw error;
     }
+  }
+
+  // Owner-scoped list (FR-LIST-01…04): AND-combined filters, LIKE search
+  // (case-insensitive via the MySQL *_ai_ci collation), stable ordering with
+  // an id tie-break so pagination never shuffles equal keys (design D4/D5),
+  // page slice + total in one transaction. The query arrives pre-validated
+  // (parseTicketListQuery) — this method sees typed values only.
+  async list(
+    userId: bigint,
+    query: TicketListQuery,
+  ): Promise<{ items: TicketWithHouse[]; total: number }> {
+    const where: Prisma.TicketWhereInput = { userId };
+    if (query.statuses) where.status = { in: query.statuses };
+    if (query.houseId !== undefined) where.houseId = query.houseId;
+    if (query.category) where.category = query.category;
+    if (query.priority) where.priority = query.priority;
+    if (query.search) {
+      // FR-LIST-03: «заявник» on a ticket is the name+phone pair, so both
+      // columns take part in the substring match
+      where.OR = [
+        { title: { contains: query.search } },
+        { description: { contains: query.search } },
+        { requesterName: { contains: query.search } },
+        { requesterPhone: { contains: query.search } },
+        { executor: { contains: query.search } },
+      ];
+    }
+    const orderBy: Prisma.TicketOrderByWithRelationInput[] = [
+      query.sort === 'dueDate'
+        ? { dueDate: { sort: query.order, nulls: 'last' } }
+        : { createdAt: query.order },
+      { id: 'desc' },
+    ];
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.ticket.findMany({
+        where,
+        orderBy,
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        include: { house: true },
+      }),
+      this.prisma.ticket.count({ where }),
+    ]);
+    return { items, total };
   }
 
   async get(userId: bigint, rawId: string): Promise<TicketWithHouse> {

@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import type {
   TicketCategory,
   TicketEventField,
@@ -7,6 +16,8 @@ import type {
   TicketStatus,
 } from '../../generated/prisma/enums';
 import type { AuthenticatedRequest } from '../auth/session.guard';
+import { parseTicketListQuery } from './ticket-list-query';
+import { isTicketOverdue, todayInKyiv } from './ticket-overdue';
 import {
   ALLOWED_TRANSITIONS,
   FeedItemWithAuthor,
@@ -31,8 +42,35 @@ export interface TicketDto {
   requesterPhone: string | null;
   executor: string | null;
   dueDate: string | null; // YYYY-MM-DD (design D5)
+  // server-computed §5.4 flag (FR-DUE-02, S-06 design D3): the SPA only
+  // styles it and owns no activity rule
+  isOverdue: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// Slim list row (S-06 design D1): exactly the FR-LIST-01 columns — no
+// description, transitions or requester details; the card stays the detail
+// view.
+export interface TicketListItemDto {
+  id: number;
+  title: string;
+  houseName: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  status: TicketStatus;
+  dueDate: string | null;
+  isOverdue: boolean;
+  createdAt: string;
+}
+
+// Page envelope (S-06 design D1/D6): total lets the client detect the last
+// page for the load-more control.
+export interface TicketListPageDto {
+  items: TicketListItemDto[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 // One feed item (PRD §5.5): a NOTE carries `text`, an EVENT carries
@@ -66,8 +104,28 @@ function toTicketDto(ticket: TicketWithHouse): TicketDto {
     requesterPhone: ticket.requesterPhone,
     executor: ticket.executor,
     dueDate: ticket.dueDate ? ticket.dueDate.toISOString().slice(0, 10) : null,
+    isOverdue: isTicketOverdue(ticket),
     createdAt: ticket.createdAt.toISOString(),
     updatedAt: ticket.updatedAt.toISOString(),
+  };
+}
+
+// `today` is computed once per request and shared by every row — a page
+// render must not straddle a midnight flip between rows.
+function toTicketListItemDto(
+  ticket: TicketWithHouse,
+  today: string,
+): TicketListItemDto {
+  return {
+    id: Number(ticket.id),
+    title: ticket.title,
+    houseName: ticket.house.name,
+    category: ticket.category,
+    priority: ticket.priority,
+    status: ticket.status,
+    dueDate: ticket.dueDate ? ticket.dueDate.toISOString().slice(0, 10) : null,
+    isOverdue: isTicketOverdue(ticket, today),
+    createdAt: ticket.createdAt.toISOString(),
   };
 }
 
@@ -86,13 +144,30 @@ function toFeedItemDto(item: FeedItemWithAuthor): FeedItemDto {
 }
 
 // No @Public() anywhere: the global SessionGuard applies, and every service
-// call is scoped to req.user.id (FR-ACCESS-01, NFR-SEC-03). No DELETE and no
-// list route by design: tickets are never deleted (FR-TICKET-04), the list
-// arrives in S-06. Feed items expose no update/delete routes either —
-// append-only (FR-FEED-01).
+// call is scoped to req.user.id (FR-ACCESS-01, NFR-SEC-03). No DELETE by
+// design: tickets are never deleted (FR-TICKET-04). Feed items expose no
+// update/delete routes either — append-only (FR-FEED-01).
 @Controller('tickets')
 export class TicketsController {
   constructor(private readonly tickets: TicketsService) {}
+
+  // Owner-scoped list with filters/search/sort/paging (FR-LIST-01…04);
+  // malformed query params answer 400 TICKET_QUERY_INVALID (design D7)
+  @Get()
+  async list(
+    @Req() req: AuthenticatedRequest,
+    @Query() rawQuery: Record<string, unknown>,
+  ): Promise<TicketListPageDto> {
+    const query = parseTicketListQuery(rawQuery);
+    const { items, total } = await this.tickets.list(req.user.id, query);
+    const today = todayInKyiv();
+    return {
+      items: items.map((ticket) => toTicketListItemDto(ticket, today)),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
 
   @Post()
   async create(

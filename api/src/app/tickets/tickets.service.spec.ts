@@ -1,6 +1,7 @@
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketError } from './ticket-errors';
+import { parseTicketListQuery } from './ticket-list-query';
 import { ALLOWED_TRANSITIONS, TicketsService } from './tickets.service';
 
 const OWNER = BigInt(1);
@@ -10,6 +11,8 @@ describe('TicketsService', () => {
   const prismaMock = {
     ticket: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
       create: jest.fn(),
       updateMany: jest.fn(),
     },
@@ -31,9 +34,11 @@ describe('TicketsService', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     // interactive transactions run the callback against the same mock —
-    // the tx client and the root client are interchangeable in these tests
-    prismaMock.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
-      fn(prismaMock),
+    // the tx client and the root client are interchangeable in these tests;
+    // the batch (array) form used by list() just awaits its members
+    prismaMock.$transaction.mockImplementation(
+      (arg: Array<Promise<unknown>> | ((tx: unknown) => unknown)) =>
+        Array.isArray(arg) ? Promise.all(arg) : arg(prismaMock),
     );
     service = new TicketsService(prismaMock as unknown as PrismaService);
   });
@@ -557,6 +562,87 @@ describe('TicketsService', () => {
         service.addNote(OWNER, '5', { text: 'Запис' }),
       ).rejects.toMatchObject({ response: { code: 'TICKET_NOT_FOUND' } });
       expect(prismaMock.ticketFeedItem.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('list', () => {
+    // queries go through the real parser — list() never sees raw params
+    const listQuery = (raw: Record<string, unknown> = {}) =>
+      parseTicketListQuery(raw);
+
+    beforeEach(() => {
+      prismaMock.ticket.findMany.mockResolvedValue([]);
+      prismaMock.ticket.count.mockResolvedValue(0);
+    });
+
+    it('scopes to the owner and defaults to newest first, page 1 (FR-LIST-01/04)', async () => {
+      await service.list(OWNER, listQuery());
+      expect(prismaMock.ticket.findMany).toHaveBeenCalledWith({
+        where: { userId: OWNER },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: 0,
+        take: 20,
+        include: { house: true },
+      });
+      expect(prismaMock.ticket.count).toHaveBeenCalledWith({
+        where: { userId: OWNER },
+      });
+    });
+
+    it('AND-combines the ACTIVE preset with house/category/priority (FR-LIST-02)', async () => {
+      await service.list(
+        OWNER,
+        listQuery({
+          status: 'ACTIVE',
+          houseId: '7',
+          category: 'PLUMBING',
+          priority: 'HIGH',
+        }),
+      );
+      expect(prismaMock.ticket.findMany.mock.calls[0][0].where).toEqual({
+        userId: OWNER,
+        status: { in: ['NEW', 'IN_PROGRESS'] },
+        houseId: HOUSE,
+        category: 'PLUMBING',
+        priority: 'HIGH',
+      });
+    });
+
+    it('searches all four FR-LIST-03 subjects as substrings alongside filters', async () => {
+      await service.list(OWNER, listQuery({ q: 'Іваненко', status: 'NEW' }));
+      expect(prismaMock.ticket.findMany.mock.calls[0][0].where).toEqual({
+        userId: OWNER,
+        status: { in: ['NEW'] },
+        OR: [
+          { title: { contains: 'Іваненко' } },
+          { description: { contains: 'Іваненко' } },
+          { requesterName: { contains: 'Іваненко' } },
+          { requesterPhone: { contains: 'Іваненко' } },
+          { executor: { contains: 'Іваненко' } },
+        ],
+      });
+    });
+
+    it('sorts by due date with undated tickets last and a stable tie-break (FR-LIST-04)', async () => {
+      await service.list(OWNER, listQuery({ sort: 'dueDate' }));
+      expect(prismaMock.ticket.findMany.mock.calls[0][0].orderBy).toEqual([
+        { dueDate: { sort: 'asc', nulls: 'last' } },
+        { id: 'desc' },
+      ]);
+    });
+
+    it('slices the requested page and reports the full total', async () => {
+      const rows = [{ id: BigInt(9) }];
+      prismaMock.ticket.findMany.mockResolvedValue(rows);
+      prismaMock.ticket.count.mockResolvedValue(107);
+      const result = await service.list(
+        OWNER,
+        listQuery({ page: '3', pageSize: '50' }),
+      );
+      const args = prismaMock.ticket.findMany.mock.calls[0][0];
+      expect(args.skip).toBe(100);
+      expect(args.take).toBe(50);
+      expect(result).toEqual({ items: rows, total: 107 });
     });
   });
 });
