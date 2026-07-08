@@ -122,11 +122,13 @@ filters — rejected: masks client bugs and is untestable.
 
 New `TicketListPage` container at the `tickets` index route (`/tickets`),
 with presentational `ticket-list` (rows) and `ticket-filters` (status
-preset chips + selects + search + sort) components. Filter/search/sort/page
-state lives in the URL query params (deep-linkable, browser-back works,
-Playwright can navigate straight to a filtered list); the facade translates
-route params → API query and exposes `items/total/loading/error` signals,
-following the existing tickets facade idiom. Search input is debounced in
+preset chips + selects + search + sort) components. Filter/search/sort state
+lives in the URL query params (deep-linkable, browser-back works,
+Playwright can navigate straight to a filtered list); the load-more page
+depth is deliberately NOT in the URL — a reloaded `page=3` cannot honestly
+restore three appended pages, so reload starts at page 1. The facade
+translates route params → API query and exposes `items/total/loading/error`
+signals, following the existing tickets facade idiom. Search input is debounced in
 the component before it touches the URL. The home page nav gains a
 «Заявки» link to `/tickets`; the list screen carries the «Нова заявка»
 action. Overdue rows/card use a visual state built from Material tokens

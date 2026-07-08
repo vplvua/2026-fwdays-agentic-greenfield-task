@@ -34,6 +34,10 @@ import { HealthFacade } from './data/health-facade';
           <mat-icon>add</mat-icon>
           Нова заявка
         </a>
+        <a matButton="outlined" routerLink="/tickets">
+          <mat-icon>list_alt</mat-icon>
+          Заявки
+        </a>
         <a matButton="outlined" routerLink="/houses">
           <mat-icon>home_work</mat-icon>
           Будинки

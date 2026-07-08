@@ -11,11 +11,11 @@
 
 ## 3. Web — list screen (read /web-conventions first)
 
-- [ ] 3.1 Facade/API layer: `TicketListItem` + page envelope model, `list(query)` in `tickets-api.ts`, facade list state (items accumulation for load-more, total, loading/error) driven by URL query params (design D8)
-- [ ] 3.2 `TicketListPage` container at the `tickets` index route (`/tickets`): reads/writes URL query params, debounced search input; home nav gains «Заявки» link; «Нова заявка» action on the list screen (design D8)
-- [ ] 3.3 Presentational `ticket-filters` (status chips with «активні» preset, house/category/priority selects, search, sort switch) and `ticket-list` (FR-LIST-01 columns, rows link to the card, overdue highlight via `--mat-sys-error*` tokens, «Показати ще», Ukrainian empty state) — mobile-first (design D8)
-- [ ] 3.4 Card overdue highlight from the DTO `isOverdue` flag (ticket-crud delta, FR-DUE-02)
-- [ ] 3.5 Web unit tests: facade query-param→request mapping and load-more accumulation, filters/list components (overdue row styling, empty state), card highlight
+- [x] 3.1 Facade/API layer: `TicketListItem` + page envelope model, `list(query)` in `tickets-api.ts`, facade list state (items accumulation for load-more, total, loading/error) driven by URL query params (design D8)
+- [x] 3.2 `TicketListPage` container at the `tickets` index route (`/tickets`): reads/writes URL query params, debounced search input; home nav gains «Заявки» link; «Нова заявка» action on the list screen (design D8)
+- [x] 3.3 Presentational `ticket-filters` (status chips with «активні» preset, house/category/priority selects, search, sort switch) and `ticket-list` (FR-LIST-01 columns, rows link to the card, overdue highlight via `--mat-sys-error*` tokens, «Показати ще», Ukrainian empty state) — mobile-first (design D8)
+- [x] 3.4 Card overdue highlight from the DTO `isOverdue` flag (ticket-crud delta, FR-DUE-02)
+- [x] 3.5 Web unit tests: facade query-param→request mapping and load-more accumulation, filters/list components (overdue row styling, empty state), card highlight
 
 ## 4. E2E and closing the slice
 

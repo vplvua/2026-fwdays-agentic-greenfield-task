@@ -51,6 +51,7 @@ function toOptions<T extends string>(
 
 export const CATEGORY_OPTIONS = toOptions(CATEGORY_LABELS);
 export const PRIORITY_OPTIONS = toOptions(PRIORITY_LABELS);
+export const STATUS_OPTIONS = toOptions(STATUS_LABELS);
 
 // Transition button labels = the action names from the PRD §5.1 table,
 // keyed from → to: the same target reads differently depending on the

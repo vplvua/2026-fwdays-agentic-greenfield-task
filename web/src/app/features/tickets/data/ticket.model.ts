@@ -37,8 +37,133 @@ export interface TicketDto extends TicketInput {
   // computed server-side from the PRD §5.1 table (FR-STATUS-02): the SPA
   // renders transition buttons from this list and owns no transition rules
   allowedTransitions: TicketStatus[];
+  // server-computed §5.4 flag (FR-DUE-02): the SPA only styles it and owns
+  // no activity rule — same principle as allowedTransitions
+  isOverdue: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// One list row — exactly the FR-LIST-01 columns (S-06 design D1)
+export interface TicketListItemDto {
+  id: number;
+  title: string;
+  houseName: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  status: TicketStatus;
+  dueDate: string | null;
+  isOverdue: boolean;
+  createdAt: string;
+}
+
+// Page envelope: total lets the list know when «Показати ще» must go away
+export interface TicketListPageDto {
+  items: TicketListItemDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+// The ACTIVE preset expands server-side (design D2); the SPA treats it as
+// an opaque extra option of the status filter.
+export type TicketStatusFilter = TicketStatus | 'ACTIVE';
+
+export type TicketListSort = 'createdAt' | 'dueDate';
+export type TicketListOrder = 'asc' | 'desc';
+
+// Filter/search/sort state of the list screen — lives in the URL query
+// params (design D8); page depth deliberately does not.
+export interface TicketListFilters {
+  status: TicketStatusFilter | null;
+  houseId: number | null;
+  category: TicketCategory | null;
+  priority: TicketPriority | null;
+  q: string;
+  sort: TicketListSort;
+  order: TicketListOrder;
+}
+
+export const DEFAULT_TICKET_LIST_FILTERS: TicketListFilters = {
+  status: null,
+  houseId: null,
+  category: null,
+  priority: null,
+  q: '',
+  sort: 'createdAt',
+  order: 'desc',
+};
+
+const STATUS_FILTER_VALUES: readonly TicketStatusFilter[] = [
+  'ACTIVE',
+  'NEW',
+  'IN_PROGRESS',
+  'DONE',
+  'CLOSED',
+  'REJECTED',
+];
+const CATEGORY_VALUES: readonly TicketCategory[] = [
+  'PLUMBING',
+  'HEATING',
+  'ELECTRICITY',
+  'ELEVATOR',
+  'ROOF_FACADE',
+  'COMMON_AREAS',
+  'GROUNDS',
+  'ACCESS_SYSTEMS',
+  'OTHER',
+];
+const PRIORITY_VALUES: readonly TicketPriority[] = [
+  'EMERGENCY',
+  'HIGH',
+  'NORMAL',
+];
+
+function pick<T extends string>(
+  value: string | null,
+  values: readonly T[],
+): T | null {
+  return value !== null && values.includes(value as T) ? (value as T) : null;
+}
+
+// URL query params → filters (design D8). Unknown values are dropped to the
+// default — the selects can only render known ones; a hand-edited URL never
+// crashes the screen.
+export function ticketListFiltersFromParams(
+  params: { get(name: string): string | null } | undefined,
+): TicketListFilters {
+  if (!params) return DEFAULT_TICKET_LIST_FILTERS;
+  const houseIdRaw = params.get('houseId');
+  const sort =
+    pick(params.get('sort'), ['createdAt', 'dueDate']) ?? 'createdAt';
+  const defaultOrder = sort === 'createdAt' ? 'desc' : 'asc';
+  return {
+    status: pick(params.get('status'), STATUS_FILTER_VALUES),
+    houseId: houseIdRaw && /^\d+$/.test(houseIdRaw) ? Number(houseIdRaw) : null,
+    category: pick(params.get('category'), CATEGORY_VALUES),
+    priority: pick(params.get('priority'), PRIORITY_VALUES),
+    q: params.get('q')?.trim() ?? '',
+    sort,
+    order: pick(params.get('order'), ['asc', 'desc']) ?? defaultOrder,
+  };
+}
+
+// Filters → URL query params: unset filters and the default sort stay out,
+// so the URL mirrors only what the user actually narrowed down.
+export function ticketListFiltersToParams(
+  filters: TicketListFilters,
+): Record<string, string> {
+  const params: Record<string, string> = {};
+  if (filters.status) params['status'] = filters.status;
+  if (filters.houseId) params['houseId'] = String(filters.houseId);
+  if (filters.category) params['category'] = filters.category;
+  if (filters.priority) params['priority'] = filters.priority;
+  if (filters.q) params['q'] = filters.q;
+  if (filters.sort !== 'createdAt' || filters.order !== 'desc') {
+    params['sort'] = filters.sort;
+    params['order'] = filters.order;
+  }
+  return params;
 }
 
 // One feed item (PRD §5.5): a NOTE carries text, an EVENT carries a
@@ -98,6 +223,7 @@ type TicketErrorCode =
   | 'TICKET_HOUSE_INVALID'
   | 'TICKET_STATUS_INVALID'
   | 'TICKET_NOTE_INVALID'
+  | 'TICKET_QUERY_INVALID'
   | 'TICKET_TRANSITION_FORBIDDEN'
   | 'TICKET_HOUSE_NOT_FOUND'
   | 'TICKET_NOT_FOUND';
@@ -113,6 +239,7 @@ const MESSAGES: Record<TicketErrorCode, string> = {
   TICKET_HOUSE_INVALID: 'Оберіть будинок зі списку',
   TICKET_STATUS_INVALID: 'Невідомий статус заявки',
   TICKET_NOTE_INVALID: 'Введіть текст запису',
+  TICKET_QUERY_INVALID: 'Невірні параметри списку — скиньте фільтри',
   TICKET_TRANSITION_FORBIDDEN:
     'Цей перехід статусу неможливий — оновіть сторінку',
   TICKET_HOUSE_NOT_FOUND: 'Будинок не знайдено',

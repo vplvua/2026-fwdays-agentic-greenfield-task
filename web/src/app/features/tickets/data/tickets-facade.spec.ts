@@ -4,8 +4,12 @@ import { of, throwError } from 'rxjs';
 import { TicketsApi } from './tickets-api';
 import { TicketsFacade } from './tickets-facade';
 import {
+  DEFAULT_TICKET_LIST_FILTERS,
   FeedItemDto,
   TicketDto,
+  TicketListFilters,
+  TicketListItemDto,
+  TicketListPageDto,
   fromWireDate,
   toWireDate,
 } from './ticket.model';
@@ -20,6 +24,7 @@ const TICKET: TicketDto = {
   priority: 'NORMAL',
   status: 'NEW',
   allowedTransitions: ['IN_PROGRESS', 'REJECTED'],
+  isOverdue: false,
   requesterName: null,
   requesterPhone: null,
   executor: null,
@@ -72,6 +77,99 @@ function setup(api: Partial<TicketsApi>): TicketsFacade {
   });
   return TestBed.inject(TicketsFacade);
 }
+
+const ROW: TicketListItemDto = {
+  id: 12,
+  title: 'Тече кран',
+  houseName: 'Шевченка 12',
+  category: 'PLUMBING',
+  priority: 'NORMAL',
+  status: 'NEW',
+  dueDate: null,
+  isOverdue: false,
+  createdAt: '2026-07-08T00:00:00.000Z',
+};
+
+function listPage(
+  items: TicketListItemDto[],
+  total: number,
+  page = 1,
+): TicketListPageDto {
+  return { items, total, page, pageSize: 20 };
+}
+
+describe('TicketsFacade list (S-06)', () => {
+  it('loadList passes the filters to the API and shows page 1 (FR-LIST-02)', async () => {
+    const calls: Array<[TicketListFilters, number]> = [];
+    const facade = setup({
+      list: (filters, page) => {
+        calls.push([filters, page]);
+        return of(listPage([ROW], 3));
+      },
+    });
+    const filters: TicketListFilters = {
+      ...DEFAULT_TICKET_LIST_FILTERS,
+      status: 'ACTIVE',
+      houseId: 7,
+    };
+    await facade.loadList(filters);
+    expect(calls).toEqual([[filters, 1]]);
+    expect(facade.listItems()).toEqual([ROW]);
+    expect(facade.listTotal()).toBe(3);
+    expect(facade.listHasMore()).toBe(true);
+    expect(facade.listLoading()).toBe(false);
+    expect(facade.listError()).toBeNull();
+  });
+
+  it('loadList failure maps the query error and empties the list', async () => {
+    const facade = setup({
+      list: () => throwError(() => apiError(400, 'TICKET_QUERY_INVALID')),
+    });
+    await facade.loadList(DEFAULT_TICKET_LIST_FILTERS);
+    expect(facade.listItems()).toEqual([]);
+    expect(facade.listError()).toBe(
+      'Невірні параметри списку — скиньте фільтри',
+    );
+    expect(facade.listLoading()).toBe(false);
+  });
+
+  it('loadMore appends the next page of the same query (FR-LIST-04)', async () => {
+    const calls: Array<[TicketListFilters, number]> = [];
+    const second: TicketListItemDto = { ...ROW, id: 13 };
+    const pages = [listPage([ROW], 2), listPage([second], 2, 2)];
+    const facade = setup({
+      list: (filters, page) => {
+        calls.push([filters, page]);
+        return of(pages[calls.length - 1]);
+      },
+    });
+    const filters: TicketListFilters = {
+      ...DEFAULT_TICKET_LIST_FILTERS,
+      q: 'кран',
+    };
+    await facade.loadList(filters);
+    await facade.loadMore();
+    expect(calls).toEqual([
+      [filters, 1],
+      [filters, 2],
+    ]);
+    expect(facade.listItems()).toEqual([ROW, second]);
+    expect(facade.listHasMore()).toBe(false);
+  });
+
+  it('loadMore is a no-op when everything is already shown', async () => {
+    let requests = 0;
+    const facade = setup({
+      list: () => {
+        requests += 1;
+        return of(listPage([ROW], 1));
+      },
+    });
+    await facade.loadList(DEFAULT_TICKET_LIST_FILTERS);
+    await facade.loadMore();
+    expect(requests).toBe(1);
+  });
+});
 
 describe('TicketsFacade', () => {
   it('load fills the ticket and its feed (FR-TICKET-01, FR-FEED-01)', async () => {

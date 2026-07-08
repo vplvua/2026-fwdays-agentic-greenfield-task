@@ -111,9 +111,10 @@ navigation: rows with the FR-LIST-01 columns linking to the ticket card,
 filter controls for status (including an «активні» preset), house,
 category and priority, a search input, a sort switch, and a load-more
 control that appends the next page (FR-LIST-04). Overdue rows SHALL be
-visually highlighted (FR-DUE-02). Filter, search, sort and page state
-SHALL live in the URL so a filtered list survives reload and back
-navigation. The «Нова заявка» action SHALL be reachable from the list.
+visually highlighted (FR-DUE-02). Filter, search and sort state SHALL
+live in the URL so a filtered list survives reload and back navigation;
+the load-more depth is in-memory and starts over on reload. The
+«Нова заявка» action SHALL be reachable from the list.
 
 #### Scenario: Combined filtering from the UI
 

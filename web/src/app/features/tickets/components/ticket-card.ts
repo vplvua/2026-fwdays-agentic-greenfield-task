@@ -39,7 +39,12 @@ import { TicketDto } from '../data/ticket.model';
                LOCAL midnight (unlike new Date()), so the calendar date
                renders unshifted in every timezone; adding 'UTC' would show
                the previous day east of Greenwich (S-04 review disposition) -->
-          <dd>{{ (ticket().dueDate | date: 'dd.MM.yyyy') ?? '—' }}</dd>
+          <dd [class.overdue]="ticket().isOverdue">
+            {{ (ticket().dueDate | date: 'dd.MM.yyyy') ?? '—' }}
+            @if (ticket().isOverdue) {
+              <span class="overdue-badge">Прострочено</span>
+            }
+          </dd>
           <dt>Виконавець</dt>
           <dd>{{ ticket().executor ?? '—' }}</dd>
           <dt>Заявник</dt>
@@ -92,6 +97,22 @@ import { TicketDto } from '../data/ticket.model';
     .details dd {
       margin: 0;
       overflow-wrap: anywhere;
+    }
+
+    /* server-computed §5.4 flag (FR-DUE-02) — visual only */
+    .overdue {
+      color: var(--mat-sys-error);
+      font-weight: 600;
+    }
+
+    .overdue-badge {
+      background: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+      border-radius: 1rem;
+      padding: 0.125rem 0.625rem;
+      margin-left: 0.375rem;
+      font-size: var(--mat-sys-label-small-size);
+      white-space: nowrap;
     }
   `,
 })

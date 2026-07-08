@@ -2,9 +2,12 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TicketsApi } from './tickets-api';
 import {
+  DEFAULT_TICKET_LIST_FILTERS,
   FeedItemDto,
   TicketDto,
   TicketInput,
+  TicketListFilters,
+  TicketListItemDto,
   TicketStatus,
   ticketErrorMessage,
 } from './ticket.model';
@@ -25,12 +28,39 @@ const INITIAL_STATE: TicketsState = {
   error: null,
 };
 
+// List screen state (S-06): separate from the card state — navigating
+// card ↔ list must not wipe either. `filters` mirror the URL (design D8);
+// `page` is the load-more depth and deliberately does not.
+interface TicketListState {
+  filters: TicketListFilters;
+  items: TicketListItemDto[];
+  total: number;
+  page: number;
+  loading: boolean;
+  loadingMore: boolean;
+  error: string | null;
+}
+
+const INITIAL_LIST_STATE: TicketListState = {
+  filters: DEFAULT_TICKET_LIST_FILTERS,
+  items: [],
+  total: 0,
+  page: 1,
+  loading: false,
+  loadingMore: false,
+  error: null,
+};
+
 // One-ticket state (card + its feed) is enough for S-05; the list arrives
 // in S-06 with its own needs. Same shape as HousesFacade (ADR-0009).
 @Injectable({ providedIn: 'root' })
 export class TicketsFacade {
   private readonly api = inject(TicketsApi);
   private readonly state = signal<TicketsState>(INITIAL_STATE);
+  private readonly listState = signal<TicketListState>(INITIAL_LIST_STATE);
+  // stale-response guard: rapid filter changes may resolve out of order —
+  // only the latest list request may write the state
+  private listRequestId = 0;
 
   // The selector run below is the ADR-0009 facade idiom (same shape in every
   // feature facade) — an intentional pattern, not copy-paste to extract.
@@ -40,6 +70,74 @@ export class TicketsFacade {
   readonly loading = computed(() => this.state().loading);
   readonly pending = computed(() => this.state().pending);
   readonly error = computed(() => this.state().error);
+
+  // fallow-ignore-next-line code-duplication
+  readonly listItems = computed(() => this.listState().items);
+  readonly listTotal = computed(() => this.listState().total);
+  readonly listLoading = computed(() => this.listState().loading);
+  readonly listLoadingMore = computed(() => this.listState().loadingMore);
+  readonly listError = computed(() => this.listState().error);
+  readonly listHasMore = computed(() => {
+    const { items, total } = this.listState();
+    return items.length < total;
+  });
+
+  /** Fresh query (URL changed): replaces the shown items with page 1. */
+  async loadList(filters: TicketListFilters): Promise<void> {
+    const requestId = ++this.listRequestId;
+    this.listState.update((s) => ({
+      ...s,
+      filters,
+      page: 1,
+      loading: true,
+      error: null,
+    }));
+    try {
+      const result = await firstValueFrom(this.api.list(filters, 1));
+      if (requestId !== this.listRequestId) return;
+      this.listState.update((s) => ({
+        ...s,
+        items: result.items,
+        total: result.total,
+        loading: false,
+      }));
+    } catch (err) {
+      if (requestId !== this.listRequestId) return;
+      this.listState.update((s) => ({
+        ...s,
+        items: [],
+        total: 0,
+        loading: false,
+        error: ticketErrorMessage(err),
+      }));
+    }
+  }
+
+  /** «Показати ще»: appends the next page of the current query. */
+  async loadMore(): Promise<void> {
+    const { filters, page, loading, loadingMore } = this.listState();
+    if (loading || loadingMore || !this.listHasMore()) return;
+    const requestId = ++this.listRequestId;
+    this.listState.update((s) => ({ ...s, loadingMore: true, error: null }));
+    try {
+      const result = await firstValueFrom(this.api.list(filters, page + 1));
+      if (requestId !== this.listRequestId) return;
+      this.listState.update((s) => ({
+        ...s,
+        items: [...s.items, ...result.items],
+        total: result.total,
+        page: page + 1,
+        loadingMore: false,
+      }));
+    } catch (err) {
+      if (requestId !== this.listRequestId) return;
+      this.listState.update((s) => ({
+        ...s,
+        loadingMore: false,
+        error: ticketErrorMessage(err),
+      }));
+    }
+  }
 
   /** Create mode must start blank: the root-singleton facade otherwise
    *  keeps the last viewed/created ticket (S-04 review, high finding). */

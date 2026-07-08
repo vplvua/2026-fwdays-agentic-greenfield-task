@@ -21,6 +21,7 @@ const TICKET: TicketDto = {
   priority: 'HIGH',
   status: 'NEW',
   allowedTransitions: ['IN_PROGRESS', 'REJECTED'],
+  isOverdue: false,
   requesterName: 'Іван',
   requesterPhone: '+380671112233',
   executor: null,
