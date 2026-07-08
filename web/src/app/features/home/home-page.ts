@@ -4,9 +4,11 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ProfileCard } from '../auth/components/profile-card';
 import { AuthFacade } from '../auth/data/auth-facade';
 import { HealthStatus } from './components/health-status';
@@ -14,11 +16,25 @@ import { HealthFacade } from './data/health-facade';
 
 @Component({
   selector: 'app-home-page',
-  imports: [MatCardModule, MatToolbarModule, HealthStatus, ProfileCard],
+  imports: [
+    MatButtonModule,
+    MatCardModule,
+    MatIconModule,
+    MatToolbarModule,
+    RouterLink,
+    HealthStatus,
+    ProfileCard,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mat-toolbar class="toolbar">Сервіс-деск Mini</mat-toolbar>
     <main class="content">
+      <nav>
+        <a matButton="outlined" routerLink="/houses">
+          <mat-icon>home_work</mat-icon>
+          Будинки
+        </a>
+      </nav>
       @if (auth.user(); as user) {
         <app-profile-card
           [user]="user"

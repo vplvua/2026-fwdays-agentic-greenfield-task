@@ -15,17 +15,17 @@
 
 ## 3. Web — houses screen (ADR-0009, /web-conventions)
 
-- [ ] 3.1 Scaffold `web/src/app/features/houses/` per design D4: lazy `houses.routes.ts` under `authGuard`, `houses-api.ts` (HttpClient), `houses-facade.ts` (signals: houses/loading/error + CRUD with reload-after-mutation)
-- [ ] 3.2 Houses page (container): list of houses, empty state in Ukrainian with a clear create action
-- [ ] 3.3 Create/edit form (presentational, Material dialog): name/address required + note; API validation errors shown as Ukrainian messages; styles use `var(--mat-sys-*)` tokens only (В-04)
-- [ ] 3.4 Delete with confirm step; refusal/API errors surfaced via snackbar in Ukrainian
-- [ ] 3.5 Add «Будинки» navigation entry on the home screen and register the `/houses` route in `app.routes.ts`
-- [ ] 3.6 Web unit tests: houses facade (load/create/update/delete, error state)
+- [x] 3.1 Scaffold `web/src/app/features/houses/` per design D4 (layout per /web-conventions: `data/` for facade+api+model): lazy `houses.routes.ts` under `authGuard`, `houses-api.ts` (HttpClient), `houses-facade.ts` (signals: houses/loaded/loading/pending/error + CRUD with reload-after-mutation)
+- [x] 3.2 Houses page (container): list of house cards, empty state in Ukrainian with a clear create action, load-error state with retry
+- [x] 3.3 Create/edit form (presentational, Material dialog): name/address required + note; API validation errors shown as Ukrainian messages; styles use `var(--mat-sys-*)` tokens only (В-04)
+- [x] 3.4 Delete with confirm step (Material dialog); refusal/API errors surfaced via snackbar in Ukrainian
+- [x] 3.5 Add «Будинки» navigation entry on the home screen and register the `/houses` route in `app.routes.ts`
+- [x] 3.6 Web unit tests: houses facade (load/create/update/delete, error state)
 
 ## 4. /login redirect for authenticated users
 
-- [ ] 4.1 Add `guestGuard` in `web/src/app/core/` (design D5): authenticated user on `/login` → `router.parseUrl('/')`; attach to the auth routes
-- [ ] 4.2 Web unit tests: `guestGuard` redirects when authenticated, passes when anonymous
+- [x] 4.1 Add `guestGuard` in `web/src/app/core/` (design D5): authenticated user on `/login` → `router.parseUrl('/')`; attach to the auth routes
+- [x] 4.2 Web unit tests: `guestGuard` redirects when authenticated, passes when anonymous
 
 ## 5. Slice-level verification (DoD order)
 
