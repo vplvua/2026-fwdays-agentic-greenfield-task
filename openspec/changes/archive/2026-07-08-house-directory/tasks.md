@@ -36,6 +36,6 @@
 - [x] 5.5 Playwright e2e (web-e2e): directory happy path (login → create «Шевченка 12» → edit note → delete, empty state) and authenticated `/login` → home redirect — green on chromium/firefox/webkit; S-02 suite re-run green (routing touched)
 - [x] 5.6 Adversarial review by `slice-reviewer` (ADR-0010): range frozen at `9b9da69..9d6efde`, verdict **APPROVE** — 1 medium (dialog whitespace-name validation, fixed + e2e), 2 low (apostrophe copy — fixed; update-vs-delete race 404 — accepted, disposition for the retro)
 - [x] 5.7 Launch-and-look: passed 2026-07-08 (login → home nav → houses: empty state → create → edit prefill → live update → delete with confirm → /login redirect). Found & fixed: Material Icons font was never linked (first mat-icon use in the project) — added to index.html
-- [ ] 5.8 Archive the change (`/opsx:archive`), confirm `npx openspec list` is empty, then `npx prettier --write openspec/specs/**/*.md`
-- [ ] 5.9 Update `docs/current-state.md` (phase/done/next/blockers) and `docs/traceability-matrix.md` (FR-HOUSE-01/02, FR-ACCESS-01, NFR-SEC-03 → spec → test → demo check; FR-HOUSE-02 refusal test marked "S-04")
-- [ ] 5.10 Session retrospective via `/slice-retro` → `docs/cycles/S-03.md`
+- [x] 5.8 Archive the change (`/opsx:archive`), confirm `npx openspec list` is empty, then `npx prettier --write openspec/specs/**/*.md` — specs synced (new `house-directory`, otp-auth login-redirect delta), validate --all --strict green
+- [x] 5.9 Update `docs/current-state.md` (phase/done/next/blockers) and `docs/traceability-matrix.md` (FR-HOUSE-01/02, FR-ACCESS-01, NFR-SEC-03 → spec → test → demo check; FR-HOUSE-02 refusal test marked "S-04") — matrix v1.3
+- [x] 5.10 Session retrospective via `/slice-retro` → `docs/cycles/S-03.md` — runs immediately after the archive commit (S-02 precedent)

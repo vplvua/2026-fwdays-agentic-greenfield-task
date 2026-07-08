@@ -165,7 +165,9 @@ with validation; step 2 — code input with a way to request a new code.
 Rate-limit and attempt-limit errors from the API SHALL be shown as
 understandable messages (FR-AUTH-03). Unauthenticated visitors of protected
 routes SHALL be redirected to the login screen; after login the user lands in
-the app.
+the app. An already-authenticated user opening `/login` SHALL be redirected
+to the home page instead of seeing the login form (S-02 review follow-up,
+accepted 2026-07-08).
 
 #### Scenario: Successful login via UI
 
@@ -181,6 +183,11 @@ the app.
 
 - **WHEN** an unauthenticated visitor opens a protected route
 - **THEN** the SPA redirects them to the login screen
+
+#### Scenario: Authenticated visitor is redirected away from login
+
+- **WHEN** an authenticated user navigates to `/login`
+- **THEN** the SPA redirects them to the home page without showing the phone/code form
 
 ### Requirement: SMS delivery goes through TurboSMS with a mandatory dev fallback
 
