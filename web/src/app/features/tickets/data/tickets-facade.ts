@@ -32,6 +32,12 @@ export class TicketsFacade {
   readonly pending = computed(() => this.state().pending);
   readonly error = computed(() => this.state().error);
 
+  /** Create mode must start blank: the root-singleton facade otherwise
+   *  keeps the last viewed/created ticket (S-04 review, high finding). */
+  reset(): void {
+    this.state.set(INITIAL_STATE);
+  }
+
   async load(id: number): Promise<void> {
     this.state.update((s) => ({
       ...s,

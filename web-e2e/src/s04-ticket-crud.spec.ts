@@ -92,6 +92,49 @@ test.describe('S-04 ticket create/edit/card', () => {
     await expect(page.getByText('З заявкою 1')).toBeVisible();
   });
 
+  test('form blocks submit without required fields (Ukrainian errors)', async ({
+    page,
+  }) => {
+    await loginViaApi(page, uniquePhone());
+    await createHouseViaApi(page, 'Гончара 5');
+    await page.goto('/tickets/new');
+
+    await page.getByRole('button', { name: 'Зберегти' }).click();
+
+    await expect(page).toHaveURL(/\/tickets\/new$/); // nothing submitted
+    await expect(page.getByText('Вкажіть назву заявки')).toBeVisible();
+    await expect(page.getByText('Оберіть будинок')).toBeVisible();
+    await expect(page.getByText('Оберіть категорію')).toBeVisible();
+  });
+
+  test('create form starts blank after viewing a ticket (review finding)', async ({
+    page,
+  }) => {
+    await loginViaApi(page, uniquePhone());
+    const houseId = await createHouseViaApi(page, 'Сагайдачного 8');
+    const created = await page.request.post('/api/tickets', {
+      data: {
+        title: 'Стара заявка',
+        houseId,
+        category: 'OTHER',
+        executor: 'Хтось',
+      },
+    });
+    expect(created.ok()).toBeTruthy();
+    const { id } = (await created.json()) as { id: number };
+
+    // view the ticket, then navigate in-app (no reload) to the create form:
+    // the root-singleton facade must not leak the viewed ticket into it
+    await page.goto(`/tickets/${id}`);
+    await expect(page.getByText('Стара заявка')).toBeVisible();
+    await page.getByRole('link', { name: 'На головну' }).click();
+    await page.getByRole('link', { name: 'Нова заявка' }).click();
+    await expect(page).toHaveURL(/\/tickets\/new$/);
+
+    await expect(page.getByLabel('Назва', { exact: true })).toHaveValue('');
+    await expect(page.getByLabel('Виконавець')).toHaveValue('');
+  });
+
   test('empty house directory shows a hint instead of the form', async ({
     page,
   }) => {

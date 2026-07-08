@@ -96,6 +96,17 @@ describe('TicketsFacade', () => {
     await expect(facade.update(12, INPUT)).resolves.toBeNull();
     expect(facade.error()).toBe('Вкажіть назву заявки');
   });
+
+  it('reset clears the held ticket and error (create mode starts blank)', async () => {
+    const facade = setup({ get: () => of(TICKET) });
+    await facade.load(12);
+    expect(facade.ticket()).toEqual(TICKET);
+
+    facade.reset();
+    expect(facade.ticket()).toBeNull();
+    expect(facade.error()).toBeNull();
+    expect(facade.pending()).toBe(false);
+  });
 });
 
 // Design D5: the due date crosses the wire as a local calendar date —

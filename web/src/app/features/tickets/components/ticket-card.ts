@@ -35,6 +35,10 @@ import { TicketDto } from '../data/ticket.model';
           <dt>Пріоритет</dt>
           <dd>{{ priorityLabels[ticket().priority] }}</dd>
           <dt>Цільовий термін</dt>
+          <!-- no timezone arg: DatePipe parses a date-only ISO string as
+               LOCAL midnight (unlike new Date()), so the calendar date
+               renders unshifted in every timezone; adding 'UTC' would show
+               the previous day east of Greenwich (S-04 review disposition) -->
           <dd>{{ (ticket().dueDate | date: 'dd.MM.yyyy') ?? '—' }}</dd>
           <dt>Виконавець</dt>
           <dd>{{ ticket().executor ?? '—' }}</dd>

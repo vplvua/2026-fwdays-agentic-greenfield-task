@@ -1,10 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
   computed,
+  effect,
   inject,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -95,16 +96,17 @@ import { TicketsFacade } from './data/tickets-facade';
     }
   `,
 })
-export class TicketCardPage implements OnInit {
+export class TicketCardPage {
   protected readonly facade = inject(TicketsFacade);
   private readonly route = inject(ActivatedRoute);
 
-  private readonly ticketId = computed(() =>
-    Number(this.route.snapshot.paramMap.get('id')),
-  );
+  // reactive, not route.snapshot: the router reuses the component instance
+  // when only :id changes (S-04 review, medium finding)
+  private readonly params = toSignal(this.route.paramMap);
+  private readonly ticketId = computed(() => Number(this.params()?.get('id')));
 
-  ngOnInit(): void {
-    void this.facade.load(this.ticketId());
+  constructor() {
+    effect(() => void this.facade.load(this.ticketId()));
   }
 
   protected onReload(): void {

@@ -3,8 +3,10 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -108,11 +110,25 @@ export class TicketFormPage implements OnInit {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
 
+  // reactive, not route.snapshot: the router reuses the component instance
+  // when only the param changes (S-04 review, medium finding)
+  private readonly params = toSignal(this.route.paramMap);
+
   /** edit mode → the ticket id from the route, create mode → null */
   protected readonly editedId = computed(() => {
-    const raw = this.route.snapshot.paramMap.get('id');
+    const raw = this.params()?.get('id');
     return raw ? Number(raw) : null;
   });
+
+  constructor() {
+    // edit mode loads the prefill ticket; create mode resets the facade so
+    // the form never inherits the last viewed ticket (review, high finding)
+    effect(() => {
+      const id = this.editedId();
+      if (id !== null) void this.tickets.load(id);
+      else this.tickets.reset();
+    });
+  }
 
   protected readonly loading = computed(
     () => this.houses.loading() || this.tickets.loading(),
@@ -136,8 +152,6 @@ export class TicketFormPage implements OnInit {
 
   ngOnInit(): void {
     void this.houses.load();
-    const id = this.editedId();
-    if (id !== null) void this.tickets.load(id);
   }
 
   protected async onSave(input: TicketInput): Promise<void> {
