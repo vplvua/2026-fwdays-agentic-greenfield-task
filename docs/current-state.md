@@ -1,4 +1,4 @@
-# Current State (2026-07-08, 01:15 Kyiv)
+# Current State (2026-07-08, ранок)
 
 > Persistent memory bank: відбиток поточного стану, **не лог**. Оновлюється
 > наприкінці кожної сесії/зрізу (DoD п.8). Формат фіксований: Phase / Done last
@@ -6,33 +6,39 @@
 
 ## Phase
 
-- S-01 «Хребет застосунку і прод-деплой» завершено; прод живий на Railway,
-  далі — S-02 (автентифікація OTP)
+- S-02 «Автентифікація OTP» завершено (вхід за телефоном через SMS-код,
+  сесія 30 днів, guard на всі ендпоінти); далі — S-03 «Довідник будинків»,
+  перед ним — процесний трек В-04 (design-check у verify)
 
 ## Done last session
 
-- S-01 повністю: Prisma 7 + MySQL (порожня baseline-міграція, migrate deploy
-  на старті контейнера), `GET /api/health` (200/503 за станом БД),
-  NestJS роздає SPA-статику (ADR-0002), hello-сторінка на Angular Material
-  (ADR-0011, В-01 закрито), Dockerfile (multi-stage), `npm run dev`
-- Прод на Railway: https://app-production-1adaf.up.railway.app — SPA + health
-  зелений, MySQL по приватній мережі, Volume `/data` під S-07, daily backups
-  увімкнено; конфіг — `railway.json`
-- Тести: unit (api 4, web 7), api-e2e (2), web-e2e (4 сценарії × 3 браузери)
-- Adversarial-ревʼю slice-reviewer (ADR-0010): BLOCK → 2 high виправлено
-  (prisma generate у `npm run dev`; застарілий api-e2e скафолд), medium/low
-  диспозиції — у ретро `docs/cycles/S-01.md`
-- Важливі граблі (закріплено в design.md зрізу): MySQL 8 `caching_sha2` +
-  mariadb-драйвер потребує `allowPublicKeyRetrieval` (інакше pool не
-  відновлюється після рестарту БД); nxE2EPreset падає під ESM-лоадером
-  Playwright — конфіг web-e2e без пресета
+- S-02 повністю: Prisma-моделі `user`/`otp_code`/`session`; ендпоінти
+  request-otp / verify-otp / logout / me (+PATCH імені); ліміти 1/60с і
+  5/добу, ≤5 спроб на код — на бекенді (NFR-SEC-02); коди — лише
+  HMAC-SHA256-хеші; сесія в httpOnly+Lax cookie (Secure на проді);
+  глобальний SessionGuard з @Public()-алоулистом (secure-by-default)
+- SMS: інтерфейс `SmsSender` — TurboSMS на проді (fail-fast без токена),
+  dev-фолбек повертає `devCode` у відповіді (ADR-0004, нуль SMS у тестах)
+- Web: /login (телефон → код, помилки українською), AuthFacade на сигналах,
+  authGuard + 401-інтерсептор, профіль (імʼя, «Вийти») на домашній
+- Тести: api unit 57, web unit 23, api-e2e 17, Playwright 33 (11×3 браузери)
+- Adversarial-ревʼю (ADR-0010): BLOCK → 2 high (TOCTOU rate-limit,
+  неатомарний лічильник спроб) виправлено per-phone KeyedMutex + atomic
+  increment; конкурентні регресії в unit та api-e2e
+- Прод: задеплоєно на Railway з TurboSMS (env: AUTH_SECRET, TURBOSMS_TOKEN,
+  SMS_MODE=turbosms; fail-fast без токена перевірено наживо — перший деплой
+  впав, поки staged-змінні не застосували в дашборді). Прод-перевірки:
+  health ok, guard 401, валідація 400. Launch-and-look локально пройдено
+  очима (вхід/імʼя/вихід); SMS-вхід на проді — підтвердження користувача
+  на власному номері
 
 ## Next 1-2 tasks
 
-- [ ] `/opsx:propose` S-02 «Автентифікація OTP» (user, otp_code, TurboSMS +
-      dev-фолбек, сесія в httpOnly cookie — ADR-0004)
-- [ ] Процесний трек (опційно): лінтер `tools/check-docs.py` + скіл
-      `/record-decision`
+- [ ] Процесний трек В-04 (**перед S-03**, рішення ретро S-01): design-check
+      у `verify` — перевірка, що UI-код використовує токени теми Material
+      (`var(--mat-sys-*)`) замість хардкоду кольорів/розмірів
+- [ ] `/opsx:propose` S-03 «Довідник будинків» (FR-HOUSE-01/02,
+      FR-ACCESS-01, NFR-SEC-03 — перше справжнє доменне CRUD з ізоляцією)
 
 ## Blockers
 

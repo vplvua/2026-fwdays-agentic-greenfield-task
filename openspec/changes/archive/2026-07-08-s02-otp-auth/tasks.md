@@ -39,7 +39,7 @@
 ## 6. Review, deploy, closeout
 
 - [x] 6.1 Adversarial review by `slice-reviewer` (ADR-0010): freeze range at an explicit end SHA, one pass, fix critical/high + re-verify; log medium/low dispositions for the retro
-- [ ] 6.2 Set Railway env vars (`AUTH_SECRET`, `SMS_MODE=turbosms`, `TURBOSMS_TOKEN` from the user) and deploy; launch-and-look: walk the happy path locally and on prod (one real SMS)
-- [ ] 6.3 Archive the change; `npx openspec list` is empty; `npx prettier --write openspec/specs/**/*.md`
-- [ ] 6.4 Update `docs/current-state.md` and `docs/traceability-matrix.md` (FR-AUTH-01…04, NFR-SEC-01/02 → spec → test → demo check)
+- [x] 6.2 Set Railway env vars (`AUTH_SECRET`, `SMS_MODE=turbosms`, `TURBOSMS_TOKEN` from the user) and deploy; launch-and-look: walk the happy path locally and on prod (one real SMS)
+- [x] 6.3 Archive the change; `npx openspec list` is empty; `npx prettier --write openspec/specs/**/*.md`
+- [x] 6.4 Update `docs/current-state.md` and `docs/traceability-matrix.md` (FR-AUTH-01…04, NFR-SEC-01/02 → spec → test → demo check)
 - [ ] 6.5 Session retrospective via `/slice-retro` → `docs/cycles/S-02.md`
