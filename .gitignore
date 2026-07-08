@@ -40,3 +40,4 @@ api/src/generated/
 .angular
 
 __screenshots__/
+.claude/settings.local.json.tmp.*
