@@ -31,12 +31,12 @@
 ## 5. Slice-level verification (DoD order)
 
 - [ ] 5.1 All task checkboxes above are `[x]`
-- [ ] 5.2 `npm run verify` passes (format, lint, typecheck, design:check, fallow audit, openspec validate, tests, build) — runs as the pre-commit hook on every slice commit
-- [ ] 5.3 Smoke test on the real local MySQL with two users: full lifecycle `Нова → В роботі → Виконана → Закрита` with feed events after each step; reopen `Виконана → В роботі`; `Закрита → В роботі` → 409 and no feed growth; PATCH executor+dueDate → two events, no-op PATCH → none; note append + empty-note 400; foreign ticket transition/feed/note → 404 parity
+- [x] 5.2 `npm run verify` passes (format, lint, typecheck, design:check, fallow audit, openspec validate, tests, build) — runs as the pre-commit hook on every slice commit
+- [x] 5.3 Smoke test on the real local MySQL with two users: full lifecycle `Нова → В роботі → Виконана → Закрита` with feed events after each step; reopen `Виконана → В роботі`; `Закрита → В роботі` → 409 and no feed growth; PATCH executor+dueDate → two events, no-op PATCH → none; note append + empty-note 400; foreign ticket transition/feed/note → 404 parity
 - [x] 5.4 api-e2e suite: lifecycle pass with feed assertions (author, from → to), forbidden transitions (terminal escape + skip) → 409, reopen path, stale/status-guard behavior, field-change events (incl. due-date set/clear and house name snapshot), no-op PATCH, note happy path + validation, feed append-only (no update/delete routes), two-user isolation for all three endpoints, 401 without cookie
 - [x] 5.5 Playwright e2e (web-e2e), from the plan acceptance scenarios: full lifecycle via card buttons with system events appearing in the feed (хто/коли/звідки/куди); reopen from `Виконана`; terminal card shows no transition buttons; edit executor/термін → system events visible in the feed; add a note from the card
 - [ ] 5.6 Adversarial review by `slice-reviewer` (ADR-0010): freeze the range at an explicit end SHA (never `..HEAD`), no commits until the verdict; critical/high fixed + re-verify, medium/low dispositions recorded for the retro; validate any suggested fix against the slice's tests before adopting (S-04 precedent)
-- [ ] 5.7 Launch-and-look: walk the slice happy path by eye (card → взято в роботу → … → Закрита with the feed updating; note add; mobile viewport 390×844 pass) and note the fact in current-state
+- [x] 5.7 Launch-and-look: walk the slice happy path by eye (card → взято в роботу → … → Закрита with the feed updating; note add; mobile viewport 390×844 pass) and note the fact in current-state
 - [ ] 5.8 Archive the change (`/opsx:archive`), confirm `npx openspec list` is empty, then `npx prettier --write openspec/specs/**/*.md` (the CLI writes synced specs unformatted)
 - [ ] 5.9 Update `docs/current-state.md` (phase/done/next/blockers) and `docs/traceability-matrix.md` (FR-STATUS-01…03, FR-FEED-01/02, FR-TICKET-03, FR-DUE-01 rows → spec/test/demo; FR-ACCESS-01 gains the feed/transition isolation tests)
 - [ ] 5.10 Session retrospective via `/slice-retro` → `docs/cycles/S-05.md` — immediately after the archive commit
