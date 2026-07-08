@@ -35,6 +35,12 @@ writable signals, public `computed`, a method per user action;
 reload-after-mutation). Components never touch HttpClient or writable
 signals. Pattern reference: `features/houses/data/houses-facade.ts`.
 
+Facades are root singletons — state survives navigation. A page that must
+start blank (create forms) calls an explicit `facade.reset()` (S-04 review,
+high). Route params: read reactively (`toSignal(route.paramMap)`), never
+`route.snapshot` — the router reuses the component instance when only the
+param changes.
+
 ## Structure & naming
 
 ```
@@ -55,7 +61,10 @@ used by 2+ features; no `libs/` for a single consumer.
 
 Presentational → plain input/output tests, no mocks. Facades → unit tests
 with mocked api service. Critical paths → Playwright in `web-e2e`
-(slice acceptance scenarios, DoD п.4).
+(slice acceptance scenarios, DoD п.4). At least one Playwright scenario
+must chain steps through **in-app navigation** (routerLink clicks), not
+`page.goto()` — a hard reload resets singleton state and masks stale-facade
+bugs (S-04 high finding).
 
 ## Never introduce
 
