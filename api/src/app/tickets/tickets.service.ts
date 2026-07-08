@@ -170,6 +170,13 @@ function dateToWire(value: Date | null): string | null {
   return value ? value.toISOString().slice(0, 10) : null;
 }
 
+// Prisma does not escape LIKE wildcards in contains() — a literal % or _
+// in the search term would act as a wildcard instead of text (FR-LIST-03
+// is a search for literal text; S-06 review finding).
+function escapeLikeWildcards(term: string): string {
+  return term.replace(/[\\%_]/g, '\\$&');
+}
+
 const notFound = () =>
   new TicketError('TICKET_NOT_FOUND', 'Ticket does not exist');
 
@@ -308,12 +315,13 @@ export class TicketsService {
     if (query.search) {
       // FR-LIST-03: «заявник» on a ticket is the name+phone pair, so both
       // columns take part in the substring match
+      const contains = escapeLikeWildcards(query.search);
       where.OR = [
-        { title: { contains: query.search } },
-        { description: { contains: query.search } },
-        { requesterName: { contains: query.search } },
-        { requesterPhone: { contains: query.search } },
-        { executor: { contains: query.search } },
+        { title: { contains } },
+        { description: { contains } },
+        { requesterName: { contains } },
+        { requesterPhone: { contains } },
+        { executor: { contains } },
       ];
     }
     const orderBy: Prisma.TicketOrderByWithRelationInput[] = [

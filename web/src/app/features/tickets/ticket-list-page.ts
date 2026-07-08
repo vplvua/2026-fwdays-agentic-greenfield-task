@@ -10,6 +10,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HousesFacade } from '../houses/data/houses-facade';
@@ -112,6 +113,7 @@ export class TicketListPage implements OnInit {
   protected readonly houses = inject(HousesFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly snackBar = inject(MatSnackBar);
 
   // reactive, never route.snapshot — the router reuses the instance when
   // only query params change (ADR-0009 checklist)
@@ -137,8 +139,17 @@ export class TicketListPage implements OnInit {
     });
   }
 
-  protected onMore(): void {
-    void this.tickets.loadMore();
+  // a paging failure keeps the shown rows and surfaces as a snackbar, same
+  // as houses-page mutations (S-06 review, medium)
+  protected async onMore(): Promise<void> {
+    const ok = await this.tickets.loadMore();
+    if (!ok) {
+      this.snackBar.open(
+        this.tickets.listMoreError() ?? 'Щось пішло не так. Спробуйте ще раз',
+        'OK',
+        { duration: 5000 },
+      );
+    }
   }
 
   protected onReload(): void {

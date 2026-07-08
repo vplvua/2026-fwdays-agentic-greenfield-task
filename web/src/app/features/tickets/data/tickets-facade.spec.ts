@@ -157,6 +157,27 @@ describe('TicketsFacade list (S-06)', () => {
     expect(facade.listHasMore()).toBe(false);
   });
 
+  it('a failed loadMore keeps the shown rows and reports on its own channel (review S-06)', async () => {
+    let requests = 0;
+    const facade = setup({
+      list: () => {
+        requests += 1;
+        return requests === 1
+          ? of(listPage([ROW], 2))
+          : throwError(() => apiError(500, 'INTERNAL'));
+      },
+    });
+    await facade.loadList(DEFAULT_TICKET_LIST_FILTERS);
+    await expect(facade.loadMore()).resolves.toBe(false);
+    // the list must NOT unmount: items intact, the page-level error stays null
+    expect(facade.listItems()).toEqual([ROW]);
+    expect(facade.listError()).toBeNull();
+    expect(facade.listMoreError()).toBe('Щось пішло не так. Спробуйте ще раз');
+    expect(facade.listLoadingMore()).toBe(false);
+    // and a retry is still possible
+    expect(facade.listHasMore()).toBe(true);
+  });
+
   it('loadMore is a no-op when everything is already shown', async () => {
     let requests = 0;
     const facade = setup({

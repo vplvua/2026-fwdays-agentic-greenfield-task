@@ -623,6 +623,12 @@ describe('TicketsService', () => {
       });
     });
 
+    it('escapes LIKE wildcards — a search for literal % is not a wildcard (review S-06)', async () => {
+      await service.list(OWNER, listQuery({ q: '10%_5\\' }));
+      const or = prismaMock.ticket.findMany.mock.calls[0][0].where.OR;
+      expect(or[0]).toEqual({ title: { contains: '10\\%\\_5\\\\' } });
+    });
+
     it('sorts by due date with undated tickets last and a stable tie-break (FR-LIST-04)', async () => {
       await service.list(OWNER, listQuery({ sort: 'dueDate' }));
       expect(prismaMock.ticket.findMany.mock.calls[0][0].orderBy).toEqual([

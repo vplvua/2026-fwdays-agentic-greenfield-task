@@ -191,4 +191,25 @@ describe('ticket list (FR-LIST-01…04, FR-DUE-02)', () => {
       expect(res.data.code).toBe('TICKET_QUERY_INVALID');
     },
   );
+
+  it('treats LIKE wildcards in the search as literal text (review S-06)', async () => {
+    // own user so the fixture totals above stay untouched
+    const { cookie: freshCookie } = await login(uniquePhone());
+    const houseId = await createHouse(freshCookie, 'вул. Знижкова, 1');
+    const literal = await createTicket(freshCookie, {
+      title: 'Знижка 10% на послуги',
+      houseId,
+      category: 'OTHER',
+    });
+    await createTicket(freshCookie, {
+      title: 'Знижка 105 грн', // would match 10% as a wildcard, not literally
+      houseId,
+      category: 'OTHER',
+    });
+    const res = await list(freshCookie, `?q=${encodeURIComponent('10%')}`);
+    expect(res.status).toBe(200);
+    expect(res.data.items.map((item: { id: number }) => item.id)).toEqual([
+      literal,
+    ]);
+  });
 });

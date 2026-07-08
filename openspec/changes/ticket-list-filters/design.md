@@ -81,8 +81,10 @@ the §5.4 activity rule client-side and skips API-level tests.
 `q` (trimmed, non-empty) becomes
 `OR [title|description|requesterName|requesterPhone|executor] contains q`
 inside the owner-scoped `where` (FR-LIST-03; «заявник» on a ticket is the
-name+phone pair, so both fields participate). MySQL's default
-`utf8mb4_0900_ai_ci` collation makes LIKE case-insensitive — no extra work.
+name+phone pair, so both fields participate). The schema's
+`utf8mb4_unicode_ci` collation (see the `ticket` migration) makes LIKE
+case-insensitive — no extra work. LIKE wildcards (`%`, `_`) in the term are
+escaped before the query — the user searches literal text (review finding).
 No index can serve a `%q%` scan; at POC volumes the scan is bounded by the
 user's own rows (D6 indexes narrow the candidates first).
 

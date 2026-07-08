@@ -39,6 +39,9 @@ interface TicketListState {
   loading: boolean;
   loadingMore: boolean;
   error: string | null;
+  // load-more failures are transient and must NOT unmount the already
+  // rendered list, so they travel on their own channel (S-06 review, medium)
+  moreError: string | null;
 }
 
 const INITIAL_LIST_STATE: TicketListState = {
@@ -49,6 +52,7 @@ const INITIAL_LIST_STATE: TicketListState = {
   loading: false,
   loadingMore: false,
   error: null,
+  moreError: null,
 };
 
 // One-ticket state (card + its feed) is enough for S-05; the list arrives
@@ -77,6 +81,7 @@ export class TicketsFacade {
   readonly listLoading = computed(() => this.listState().loading);
   readonly listLoadingMore = computed(() => this.listState().loadingMore);
   readonly listError = computed(() => this.listState().error);
+  readonly listMoreError = computed(() => this.listState().moreError);
   readonly listHasMore = computed(() => {
     const { items, total } = this.listState();
     return items.length < total;
@@ -91,6 +96,7 @@ export class TicketsFacade {
       page: 1,
       loading: true,
       error: null,
+      moreError: null,
     }));
     try {
       const result = await firstValueFrom(this.api.list(filters, 1));
@@ -113,15 +119,22 @@ export class TicketsFacade {
     }
   }
 
-  /** «Показати ще»: appends the next page of the current query. */
-  async loadMore(): Promise<void> {
+  /** «Показати ще»: appends the next page of the current query. Resolves
+   *  to false on failure with `listMoreError` carrying the Ukrainian copy —
+   *  the shown items stay untouched, `listError` stays null, so the list
+   *  never unmounts on a transient paging failure (S-06 review, medium). */
+  async loadMore(): Promise<boolean> {
     const { filters, page, loading, loadingMore } = this.listState();
-    if (loading || loadingMore || !this.listHasMore()) return;
+    if (loading || loadingMore || !this.listHasMore()) return true;
     const requestId = ++this.listRequestId;
-    this.listState.update((s) => ({ ...s, loadingMore: true, error: null }));
+    this.listState.update((s) => ({
+      ...s,
+      loadingMore: true,
+      moreError: null,
+    }));
     try {
       const result = await firstValueFrom(this.api.list(filters, page + 1));
-      if (requestId !== this.listRequestId) return;
+      if (requestId !== this.listRequestId) return true;
       this.listState.update((s) => ({
         ...s,
         items: [...s.items, ...result.items],
@@ -129,13 +142,15 @@ export class TicketsFacade {
         page: page + 1,
         loadingMore: false,
       }));
+      return true;
     } catch (err) {
-      if (requestId !== this.listRequestId) return;
+      if (requestId !== this.listRequestId) return true;
       this.listState.update((s) => ({
         ...s,
         loadingMore: false,
-        error: ticketErrorMessage(err),
+        moreError: ticketErrorMessage(err),
       }));
+      return false;
     }
   }
 
