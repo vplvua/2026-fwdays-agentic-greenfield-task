@@ -72,6 +72,8 @@ npx openspec list           # active changes (must be empty after archive)
 
 Single test file: `npx nx test api -- app.controller` (positional Jest pattern). For Playwright: `npx nx e2e web-e2e -- --grep "name"`.
 
+Stop any background `nx serve` before running `nx e2e api-e2e`: the e2e target waits for `api:serve` held by the other Nx process and fails with an opaque globalSetup error.
+
 ## Quality gates
 
 `npm run verify` is the blocking ritual: `format:check` → `lint` → `typecheck` → `fallow audit` → `openspec validate --all --strict` → `test` → `build`. E2e is intentionally NOT part of it (run targeted `nx e2e` specs per slice instead).
@@ -81,7 +83,11 @@ Claude Code hooks (`.claude/settings.json`, scripts in `.claude/hooks/`) enforce
 - **PostToolUse** on Write|Edit: prettier + `eslint --fix` on the edited file; unfixable errors come back as feedback — fix them immediately.
 - **PreToolUse** on Bash: any command containing `git commit` first runs `npm run verify`; the commit is blocked if it fails. Expect ~1–2 min on a cold Nx cache. The hook fires BEFORE the whole command executes — never chain a fix with the commit (`prettier --write … && git commit` verifies the unfixed tree); run fixes as a separate command first.
 
-Fallow config lives in `.fallowrc.json` (toolchain deps ignored, jest infra excluded). New string-referenced files (e.g. jest setup files) may show up as false "dead files" — extend the config, don't suppress inline without need. Fallow also blocks on unused dependencies: commit newly installed packages together with the code that first imports them, not ahead of it.
+Fallow config lives in `.fallowrc.json` (toolchain deps ignored, jest infra excluded). New string-referenced files (e.g. jest setup files) may show up as false "dead files" — extend the config, don't suppress inline without need. Fallow also blocks on unused dependencies: commit newly installed packages together with the code that first imports them, not ahead of it. Known false positive: methods called only through an `inject()`-typed instance (e.g. from an Angular functional interceptor) are reported as `unused-class-member` — an inline `// fallow-ignore-next-line unused-class-member` with a justifying comment next to it is acceptable there.
+
+## Deploy notes (Railway)
+
+Variables added via the Railway dashboard stay **staged** until "Apply changes"/"Deploy" is clicked — the CLI does not see them and a deploy will not pick them up; `railway variables --set` applies immediately instead. `railway logs` with no arguments shows the latest _successful_ deployment — to read a failed one, pass its full ID: `railway logs <deployment-id>` (IDs from `railway deployment list --json`). Prod refuses to start without `TURBOSMS_TOKEN` when `SMS_MODE=turbosms` — that fail-fast is by design (ADR-0004), the previous deployment stays live.
 
 ## Slice workflow (SDD)
 
