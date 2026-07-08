@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { loginViaApi, uniquePhone } from './support/auth';
 
 // S-01 acceptance: the walking skeleton is alive — SPA renders and
 // /api/health is green against a real MySQL (see openspec app-skeleton spec).
+// Since S-02 the home page sits behind the auth guard, so the check logs in.
 test.describe('S-01 walking skeleton', () => {
   test('hello page renders and shows green health status', async ({ page }) => {
+    await loginViaApi(page, uniquePhone());
     await page.goto('/');
 
     await expect(page).toHaveTitle('Сервіс-деск Mini');
