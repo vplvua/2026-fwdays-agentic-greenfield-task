@@ -174,13 +174,17 @@ describe('OtpService', () => {
       });
     });
 
-    it('increments attempts on a wrong code and keeps the code alive', async () => {
+    it('increments attempts atomically on a wrong code and keeps the code alive', async () => {
       prismaMock.otpCode.findFirst.mockResolvedValue(
         activeCodeRow('123456', { attempts: 2 }),
       );
+      prismaMock.otpCode.update.mockResolvedValue(
+        activeCodeRow('123456', { attempts: 3 }),
+      );
       await expectAuthError(service.verifyOtp(PHONE, '000000'), 'OTP_INVALID');
+      expect(prismaMock.otpCode.update).toHaveBeenCalledTimes(1);
       expect(prismaMock.otpCode.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { attempts: 3 } }),
+        expect.objectContaining({ data: { attempts: { increment: 1 } } }),
       );
     });
 
@@ -188,20 +192,52 @@ describe('OtpService', () => {
       prismaMock.otpCode.findFirst.mockResolvedValue(
         activeCodeRow('123456', { attempts: 4 }),
       );
+      prismaMock.otpCode.update.mockResolvedValueOnce(
+        activeCodeRow('123456', { attempts: 5 }),
+      );
       await expectAuthError(
         service.verifyOtp(PHONE, '000000'),
         'OTP_ATTEMPTS_EXCEEDED',
       );
-      expect(prismaMock.otpCode.update).toHaveBeenCalledWith(
+      expect(prismaMock.otpCode.update).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          data: { attempts: 5, consumedAt: expect.any(Date) },
+          data: { consumedAt: expect.any(Date) },
         }),
       );
     });
 
     it('rejects a malformed code without crashing on hash length', async () => {
       prismaMock.otpCode.findFirst.mockResolvedValue(activeCodeRow('123456'));
+      prismaMock.otpCode.update.mockResolvedValue(
+        activeCodeRow('123456', { attempts: 1 }),
+      );
       await expectAuthError(service.verifyOtp(PHONE, 'abc'), 'OTP_INVALID');
+    });
+  });
+
+  describe('per-phone serialization (slice-review fix, ADR-0010)', () => {
+    it('concurrent requestOtp calls cannot bypass the rate limit', async () => {
+      // Stateful mock: findMany reflects rows created so far, so the test
+      // fails if the calls interleave instead of running one-by-one
+      const rows: { createdAt: Date }[] = [];
+      prismaMock.otpCode.findMany.mockImplementation(async () => [...rows]);
+      prismaMock.otpCode.create.mockImplementation(
+        async (args: { data: object }) => {
+          rows.push({ createdAt: new Date() });
+          return args.data;
+        },
+      );
+
+      const results = await Promise.allSettled([
+        service.requestOtp(PHONE),
+        service.requestOtp(PHONE),
+        service.requestOtp(PHONE),
+      ]);
+
+      const sent = results.filter((r) => r.status === 'fulfilled');
+      expect(sent).toHaveLength(1);
+      expect(smsMock.send).toHaveBeenCalledTimes(1);
+      expect(rows).toHaveLength(1);
     });
   });
 });

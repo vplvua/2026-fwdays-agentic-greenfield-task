@@ -32,13 +32,13 @@
 
 - [x] 5.1 api-e2e specs: request/verify happy path (dev `devCode`), 60s and daily rate limits, 5-attempt invalidation, expired/reused code (rows manipulated via Prisma), guard 401 + public allowlist, logout revocation, cookie attributes
 - [x] 5.2 web-e2e (Playwright): login happy path via dev code, rate-limit message shown, redirect-to-login for unauthenticated visitor, logout, session survives page reload
-- [ ] 5.3 All task checkboxes above `[x]`; `npm run verify` passes
+- [x] 5.3 All task checkboxes above `[x]`; `npm run verify` passes
 - [x] 5.4 Smoke test on a real DB: full login/logout cycle, inspect `user`/`otp_code`/`session` rows, confirm hashes-only and invariants
 - [x] 5.5 Playwright e2e for the slice's critical paths green (5.2)
 
 ## 6. Review, deploy, closeout
 
-- [ ] 6.1 Adversarial review by `slice-reviewer` (ADR-0010): freeze range at an explicit end SHA, one pass, fix critical/high + re-verify; log medium/low dispositions for the retro
+- [x] 6.1 Adversarial review by `slice-reviewer` (ADR-0010): freeze range at an explicit end SHA, one pass, fix critical/high + re-verify; log medium/low dispositions for the retro
 - [ ] 6.2 Set Railway env vars (`AUTH_SECRET`, `SMS_MODE=turbosms`, `TURBOSMS_TOKEN` from the user) and deploy; launch-and-look: walk the happy path locally and on prod (one real SMS)
 - [ ] 6.3 Archive the change; `npx openspec list` is empty; `npx prettier --write openspec/specs/**/*.md`
 - [ ] 6.4 Update `docs/current-state.md` and `docs/traceability-matrix.md` (FR-AUTH-01…04, NFR-SEC-01/02 → spec → test → demo check)

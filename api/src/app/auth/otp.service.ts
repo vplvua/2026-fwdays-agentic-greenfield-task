@@ -4,6 +4,7 @@ import type { UserModel } from '../../generated/prisma/models';
 import { PrismaService } from '../prisma/prisma.service';
 import { AUTH_CONFIG, AuthConfig } from './auth-config';
 import { AuthError } from './auth-errors';
+import { KeyedMutex } from './keyed-mutex';
 import { normalizePhone } from './phone';
 import { SMS_SENDER, SmsSender } from './sms/sms-sender';
 
@@ -17,9 +18,13 @@ export const OTP_MAX_ATTEMPTS = 5;
 // OTP state machine (design D4): only the latest unconsumed, unexpired code
 // per phone is valid; send limits are derived from otp_code rows (the table
 // is the send log — no stored counters to drift, design D1). All limits are
-// enforced here, server-side (NFR-SEC-02).
+// enforced here, server-side (NFR-SEC-02). Both flows are serialized per
+// phone via KeyedMutex — concurrent requests must not race the rate-limit
+// reads or the attempt counter (S-02 slice-review findings, ADR-0010).
 @Injectable()
 export class OtpService {
+  private readonly phoneLocks = new KeyedMutex();
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject(SMS_SENDER) private readonly sms: SmsSender,
@@ -39,7 +44,10 @@ export class OtpService {
     if (!phone) {
       throw new AuthError('PHONE_INVALID', 'Phone must be a valid +380 number');
     }
+    return this.phoneLocks.run(phone, () => this.requestOtpLocked(phone));
+  }
 
+  private async requestOtpLocked(phone: string): Promise<{ devCode?: string }> {
     const now = Date.now();
     const sentLastDay = await this.prisma.otpCode.findMany({
       where: { phone, createdAt: { gte: new Date(now - OTP_DAILY_WINDOW_MS) } },
@@ -81,6 +89,13 @@ export class OtpService {
     if (!phone) {
       throw new AuthError('PHONE_INVALID', 'Phone must be a valid +380 number');
     }
+    return this.phoneLocks.run(phone, () => this.verifyOtpLocked(phone, code));
+  }
+
+  private async verifyOtpLocked(
+    phone: string,
+    code: string,
+  ): Promise<UserModel> {
     const active = await this.prisma.otpCode.findFirst({
       where: { phone, consumedAt: null },
       orderBy: { createdAt: 'desc' },
@@ -98,19 +113,24 @@ export class OtpService {
       'hex',
     );
     if (!timingSafeEqual(expected, actual)) {
-      const attempts = active.attempts + 1;
-      const exhausted = attempts >= OTP_MAX_ATTEMPTS;
+      // Atomic increment (not read-modify-write): concurrent guesses must
+      // never under-count the cap that guards a 10^6-space code
+      const updated = await this.prisma.otpCode.update({
+        where: { id: active.id },
+        data: { attempts: { increment: 1 } },
+      });
+      if (updated.attempts < OTP_MAX_ATTEMPTS) {
+        throw new AuthError('OTP_INVALID', 'Wrong code');
+      }
+      // The 5th failure invalidates the code (FR-AUTH-02)
       await this.prisma.otpCode.update({
         where: { id: active.id },
-        // The 5th failure invalidates the code (FR-AUTH-02)
-        data: { attempts, ...(exhausted ? { consumedAt: new Date() } : {}) },
+        data: { consumedAt: new Date() },
       });
-      throw exhausted
-        ? new AuthError(
-            'OTP_ATTEMPTS_EXCEEDED',
-            'Too many attempts — request a new code',
-          )
-        : new AuthError('OTP_INVALID', 'Wrong code');
+      throw new AuthError(
+        'OTP_ATTEMPTS_EXCEEDED',
+        'Too many attempts — request a new code',
+      );
     }
 
     await this.prisma.otpCode.update({

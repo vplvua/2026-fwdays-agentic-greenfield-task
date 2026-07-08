@@ -84,7 +84,13 @@ Normative requirements: FR-AUTH-01…04, NFR-SEC-01/02 (see spec delta).
   (5th failure marks consumed) → on match mark consumed, upsert `user` by
   phone (creates on first login, FR-AUTH-01), create session, set cookie.
   Both endpoints are throttled and never reveal whether an account exists
-  (responses are identical for new/existing phones).
+  (responses are identical for new/existing phones). Both flows are
+  serialized **per phone** by an in-memory `KeyedMutex`, and the attempt
+  counter uses an atomic `{ increment: 1 }` — otherwise concurrent requests
+  race the rate-limit reads (TOCTOU) and under-count failed attempts
+  (S-02 slice-review findings, ADR-0010). In-memory locking is a correct
+  concurrency control here because the app is fixed to a single instance
+  (ADR-0002/0003).
 - **Why:** "only the latest code is valid" removes ambiguity with multiple
   in-flight codes and makes the attempt counter per-code exactly as
   FR-AUTH-02 words it. Upsert-by-phone makes registration and login one code
@@ -164,6 +170,11 @@ Normative requirements: FR-AUTH-01…04, NFR-SEC-01/02 (see spec delta).
 - [SMS budget abuse via open registration — PRD risk table] → server-side
   60s/daily limits in this slice; allowlist is a known trivial follow-up if
   abuse happens (kept out of scope deliberately).
+- [Concurrent request storms racing the limit checks (TOCTOU) and the
+  attempt counter — found by the slice review, ADR-0010] → per-phone
+  `KeyedMutex` around request/verify + atomic attempts increment; unit and
+  api-e2e concurrency regressions pin the behavior. Revisit (DB locks) only
+  if the single-instance constraint ever changes.
 - [Rate limits make tests flaky/slow (60s waits)] → tests use unique phone
   numbers per run and assert limits by issuing back-to-back requests on one
   number; no sleeps needed. TTL/expiry cases manipulate `otp_code` rows

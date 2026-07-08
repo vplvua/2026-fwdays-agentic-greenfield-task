@@ -69,6 +69,17 @@ describe('POST /api/auth/otp/request', () => {
     expect(res.data.code).toBe('RATE_LIMITED_60S');
   });
 
+  it('concurrent requests cannot bypass the rate limit (slice-review fix)', async () => {
+    const phone = uniquePhone();
+    const responses = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        api.post('/api/auth/otp/request', { phone }),
+      ),
+    );
+    expect(responses.filter((r) => r.status === 200)).toHaveLength(1);
+    expect(responses.filter((r) => r.status === 429)).toHaveLength(3);
+  });
+
   it('refuses the 6th SMS in 24h with RATE_LIMITED_DAILY (FR-AUTH-03)', async () => {
     const phone = uniquePhone();
     // Backfill 5 sends spread over the last day (all outside the 60s window)
