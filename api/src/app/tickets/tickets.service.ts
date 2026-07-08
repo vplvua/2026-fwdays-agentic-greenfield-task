@@ -1,7 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
-import { TicketCategory, TicketPriority } from '../../generated/prisma/enums';
-import type { HouseModel, TicketModel } from '../../generated/prisma/models';
+import {
+  TicketCategory,
+  TicketEventField,
+  TicketPriority,
+  TicketStatus,
+} from '../../generated/prisma/enums';
+import type {
+  HouseModel,
+  TicketFeedItemModel,
+  TicketModel,
+  UserModel,
+} from '../../generated/prisma/models';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketError } from './ticket-errors';
 
@@ -10,9 +20,28 @@ export const TICKET_DESCRIPTION_MAX = 10_000;
 export const TICKET_REQUESTER_NAME_MAX = 255;
 export const TICKET_REQUESTER_PHONE_MAX = 32;
 export const TICKET_EXECUTOR_MAX = 255;
+export const TICKET_NOTE_MAX = 10_000;
 
 // The card payload joins the house name in (design D2) — no client stitching.
 export type TicketWithHouse = TicketModel & { house: HouseModel };
+
+// Feed items carry their author for display (FR-FEED-01).
+export type FeedItemWithAuthor = TicketFeedItemModel & { author: UserModel };
+
+// The PRD §5.1 transition table — the single source of truth for
+// FR-STATUS-02. The API enforces it here; the SPA only renders the
+// `allowedTransitions` the card payload computes from the same const, so
+// there is no client-side copy to drift. CLOSED and REJECTED are terminal.
+export const ALLOWED_TRANSITIONS: Record<
+  TicketStatus,
+  readonly TicketStatus[]
+> = {
+  NEW: [TicketStatus.IN_PROGRESS, TicketStatus.REJECTED],
+  IN_PROGRESS: [TicketStatus.DONE, TicketStatus.REJECTED],
+  DONE: [TicketStatus.IN_PROGRESS, TicketStatus.CLOSED],
+  CLOSED: [],
+  REJECTED: [],
+};
 
 // Validation lives in the service, no class-validator (BC-PRIN-01, same as
 // houses). Field rules per FR-TICKET-01 and design D2.
@@ -106,6 +135,38 @@ function parseBodyHouseId(value: unknown): bigint {
 function parseTicketId(raw: string): bigint | null {
   if (!/^\d{1,18}$/.test(raw)) return null;
   return BigInt(raw);
+}
+
+// A transition target that is not a status at all is a 400 shape error;
+// a real status the §5.1 table forbids from the current one is a 409.
+function normalizeTargetStatus(value: unknown): TicketStatus {
+  if (
+    typeof value === 'string' &&
+    Object.values(TicketStatus).includes(value as TicketStatus)
+  ) {
+    return value as TicketStatus;
+  }
+  throw new TicketError('TICKET_STATUS_INVALID', 'Unknown ticket status');
+}
+
+function normalizeNote(value: unknown): string {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) {
+    throw new TicketError('TICKET_NOTE_INVALID', 'Note text is required');
+  }
+  if (text.length > TICKET_NOTE_MAX) {
+    throw new TicketError(
+      'TICKET_NOTE_INVALID',
+      `Note is longer than ${TICKET_NOTE_MAX} characters`,
+    );
+  }
+  return text;
+}
+
+// Event values are locale-free snapshots (design D1): enum keys as-is, due
+// dates as YYYY-MM-DD, null for an empty value; the SPA composes Ukrainian.
+function dateToWire(value: Date | null): string | null {
+  return value ? value.toISOString().slice(0, 10) : null;
 }
 
 const notFound = () =>
@@ -242,7 +303,11 @@ export class TicketsService {
   }
 
   // PATCH updates only the fields present in the body; `dueDate: null`
-  // clears the date (FR-DUE-01); status is not read from the body.
+  // clears the date (FR-DUE-01); status is not read from the body. Changes
+  // of the five FR-TICKET-03 fields (house, category, priority, executor,
+  // due date) are recorded as system EVENTs in the same transaction as the
+  // UPDATE — a change without its event can never be observed. Untracked
+  // fields (title, description, requester) produce no events by requirement.
   async update(
     userId: bigint,
     rawId: string,
@@ -258,22 +323,181 @@ export class TicketsService {
     );
     const data: TicketData = normalizeFields(body, present);
     if ('houseId' in body) {
-      data.houseId = await this.resolveOwnHouseId(userId, body.houseId);
+      // shape check here (400); the ownership check runs inside the
+      // transaction where the new house name snapshot is read anyway
+      data.houseId = parseBodyHouseId(body.houseId);
     }
     // an effectively empty patch (e.g. only an ignored status) is a no-op:
     // updateMany with empty data reports count 0 and would 404 the owner
     if (Object.keys(data).length === 0) return this.get(userId, rawId);
     try {
-      // updateMany applies the owner filter atomically; count 0 → 404
-      const { count } = await this.prisma.ticket.updateMany({
-        where: { id, userId },
-        data,
+      return await this.prisma.$transaction(async (tx) => {
+        const current = await tx.ticket.findFirst({
+          where: { id, userId },
+          include: { house: true },
+        });
+        if (!current) throw notFound();
+        const events = await this.diffTrackedFields(tx, userId, current, data);
+        const { count } = await tx.ticket.updateMany({
+          where: { id, userId },
+          data,
+        });
+        if (count === 0) throw notFound();
+        if (events.length > 0) {
+          await tx.ticketFeedItem.createMany({ data: events });
+        }
+        return (await tx.ticket.findFirst({
+          where: { id, userId },
+          include: { house: true },
+        })) as TicketWithHouse;
       });
-      if (count === 0) throw notFound();
     } catch (error) {
       if (isForeignKeyError(error)) throw houseNotFound();
       throw error;
     }
-    return this.get(userId, rawId);
+  }
+
+  // One EVENT per actually-changed tracked field (FR-TICKET-03); same-value
+  // writes are skipped. House events snapshot both *names* (design D1) — the
+  // new one is read here, which doubles as the in-transaction owner check.
+  private async diffTrackedFields(
+    tx: Prisma.TransactionClient,
+    userId: bigint,
+    current: TicketWithHouse,
+    data: TicketData,
+  ): Promise<Prisma.TicketFeedItemCreateManyInput[]> {
+    // tracked scalar fields share one shape: enum keys / plain text on both
+    // sides; dueDate and house need value conversion first
+    const changes: Array<[TicketEventField, string | null, string | null]> = [];
+    if (data.houseId !== undefined && data.houseId !== current.houseId) {
+      const newName = await this.resolveHouseName(tx, userId, data.houseId);
+      changes.push(['HOUSE', current.house.name, newName]);
+    }
+    const scalars = [
+      ['CATEGORY', 'category'],
+      ['PRIORITY', 'priority'],
+      ['EXECUTOR', 'executor'],
+    ] as const satisfies ReadonlyArray<
+      [TicketEventField, keyof TicketModel & keyof TicketData]
+    >;
+    for (const [field, key] of scalars) {
+      const next = data[key] as string | null | undefined;
+      if (next !== undefined && next !== current[key]) {
+        changes.push([field, current[key], next]);
+      }
+    }
+    if (data.dueDate !== undefined) {
+      const oldValue = dateToWire(current.dueDate);
+      const newValue = dateToWire(data.dueDate as Date | null);
+      if (oldValue !== newValue) changes.push(['DUE_DATE', oldValue, newValue]);
+    }
+    return changes.map(([field, oldValue, newValue]) => ({
+      ticketId: current.id,
+      authorId: userId,
+      type: 'EVENT',
+      field,
+      oldValue,
+      newValue,
+    }));
+  }
+
+  private async resolveHouseName(
+    tx: Prisma.TransactionClient,
+    userId: bigint,
+    houseId: bigint,
+  ): Promise<string> {
+    const house = await tx.house.findFirst({
+      where: { id: houseId, userId },
+      select: { name: true },
+    });
+    if (!house) throw houseNotFound();
+    return house.name;
+  }
+
+  // Status changes go only through here (FR-STATUS-02): the §5.1 table check
+  // plus a status-guarded updateMany inside one transaction — a concurrent
+  // transition loses with the same 409 instead of blindly overwriting, and
+  // the STATUS event lands atomically with the change (FR-STATUS-03).
+  async transition(
+    userId: bigint,
+    rawId: string,
+    input: { to?: unknown } | undefined,
+  ): Promise<TicketWithHouse> {
+    const id = parseTicketId(rawId);
+    if (!id) throw notFound();
+    const to = normalizeTargetStatus(input?.to);
+    return this.prisma.$transaction(async (tx) => {
+      const ticket = await tx.ticket.findFirst({
+        where: { id, userId },
+        select: { status: true },
+      });
+      if (!ticket) throw notFound();
+      const forbidden = () =>
+        new TicketError(
+          'TICKET_TRANSITION_FORBIDDEN',
+          `Transition from ${ticket.status} to ${to} is not allowed`,
+        );
+      if (!ALLOWED_TRANSITIONS[ticket.status].includes(to)) throw forbidden();
+      const { count } = await tx.ticket.updateMany({
+        where: { id, userId, status: ticket.status },
+        data: { status: to },
+      });
+      // count 0 = a concurrent transition moved the status after our read —
+      // the stale request is rejected, not applied (spec requirement)
+      if (count === 0) throw forbidden();
+      await tx.ticketFeedItem.create({
+        data: {
+          ticketId: id,
+          authorId: userId,
+          type: 'EVENT',
+          field: 'STATUS',
+          oldValue: ticket.status,
+          newValue: to,
+        },
+      });
+      return (await tx.ticket.findFirst({
+        where: { id, userId },
+        include: { house: true },
+      })) as TicketWithHouse;
+    });
+  }
+
+  // Full chronological feed (PRD §5.5): ORDER BY id — auto-increment breaks
+  // same-timestamp ties. No pagination at POC scale (design D2).
+  async getFeed(userId: bigint, rawId: string): Promise<FeedItemWithAuthor[]> {
+    const id = parseTicketId(rawId);
+    const ticket = id
+      ? await this.prisma.ticket.findFirst({
+          where: { id, userId },
+          select: { id: true },
+        })
+      : null;
+    if (!ticket) throw notFound();
+    return this.prisma.ticketFeedItem.findMany({
+      where: { ticketId: id as bigint },
+      orderBy: { id: 'asc' },
+      include: { author: true },
+    });
+  }
+
+  // Append-only user note (FR-FEED-01); there are no update/delete paths for
+  // feed items anywhere in the service by design.
+  async addNote(
+    userId: bigint,
+    rawId: string,
+    input: { text?: unknown } | undefined,
+  ): Promise<FeedItemWithAuthor> {
+    const id = parseTicketId(rawId);
+    if (!id) throw notFound();
+    const text = normalizeNote(input?.text);
+    const ticket = await this.prisma.ticket.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!ticket) throw notFound();
+    return this.prisma.ticketFeedItem.create({
+      data: { ticketId: id, authorId: userId, type: 'NOTE', text },
+      include: { author: true },
+    });
   }
 }

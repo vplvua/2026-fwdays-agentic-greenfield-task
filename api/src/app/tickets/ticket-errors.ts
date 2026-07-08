@@ -6,6 +6,9 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 // "foreign" with an identical body — FR-ACCESS-01 forbids distinguishing
 // them. TICKET_HOUSE_INVALID is the 400 shape error for a missing or
 // non-numeric houseId (spec: absent required fields are 400, not 404).
+// TICKET_STATUS_INVALID is the 400 for a transition target that is not a
+// status at all; TICKET_TRANSITION_FORBIDDEN is the 409 for a real status
+// that the PRD §5.1 table does not allow from the current one (FR-STATUS-02).
 export type TicketErrorCode =
   | 'TICKET_TITLE_INVALID'
   | 'TICKET_DESCRIPTION_INVALID'
@@ -15,6 +18,9 @@ export type TicketErrorCode =
   | 'TICKET_EXECUTOR_INVALID'
   | 'TICKET_DUE_DATE_INVALID'
   | 'TICKET_HOUSE_INVALID'
+  | 'TICKET_STATUS_INVALID'
+  | 'TICKET_NOTE_INVALID'
+  | 'TICKET_TRANSITION_FORBIDDEN'
   | 'TICKET_HOUSE_NOT_FOUND'
   | 'TICKET_NOT_FOUND';
 
@@ -27,6 +33,9 @@ const STATUS_BY_CODE: Record<TicketErrorCode, HttpStatus> = {
   TICKET_EXECUTOR_INVALID: HttpStatus.BAD_REQUEST,
   TICKET_DUE_DATE_INVALID: HttpStatus.BAD_REQUEST,
   TICKET_HOUSE_INVALID: HttpStatus.BAD_REQUEST,
+  TICKET_STATUS_INVALID: HttpStatus.BAD_REQUEST,
+  TICKET_NOTE_INVALID: HttpStatus.BAD_REQUEST,
+  TICKET_TRANSITION_FORBIDDEN: HttpStatus.CONFLICT,
   TICKET_HOUSE_NOT_FOUND: HttpStatus.NOT_FOUND,
   TICKET_NOT_FOUND: HttpStatus.NOT_FOUND,
 };

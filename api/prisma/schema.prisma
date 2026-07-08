@@ -21,6 +21,7 @@ model User {
   sessions  Session[]
   houses    House[]
   tickets   Ticket[]
+  feedItems TicketFeedItem[]
 
   @@map("user")
 }
@@ -63,8 +64,8 @@ enum TicketPriority {
   NORMAL // Звичайна
 }
 
-// PRD §5.1 lifecycle. S-04 only creates tickets in NEW; transitions and
-// their validation arrive in S-05.
+// PRD §5.1 lifecycle. Transitions are validated against the §5.1 table in
+// tickets.service (ALLOWED_TRANSITIONS); CLOSED and REJECTED are terminal.
 enum TicketStatus {
   NEW // Нова
   IN_PROGRESS // В роботі
@@ -94,9 +95,47 @@ model Ticket {
   dueDate        DateTime?      @map("due_date") @db.Date
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
+  feedItems      TicketFeedItem[]
 
   @@index([userId])
   @@map("ticket")
+}
+
+// Single append-only feed per ticket (PRD §5.5, FR-FEED-01/02): user NOTEs
+// and system EVENTs in one table — chronological order is ORDER BY id.
+enum TicketFeedItemType {
+  NOTE // user text note
+  EVENT // system event
+}
+
+// Which ticket field a system EVENT records (FR-STATUS-03, FR-TICKET-03).
+enum TicketEventField {
+  STATUS
+  HOUSE
+  CATEGORY
+  PRIORITY
+  EXECUTOR
+  DUE_DATE
+}
+
+// Items are immutable (no updatedAt, no update/delete API). EVENT values are
+// locale-free snapshots (enum keys, YYYY-MM-DD, house *name* at change time —
+// history must survive renames); the SPA composes the Ukrainian sentences.
+model TicketFeedItem {
+  id        BigInt             @id @default(autoincrement())
+  ticketId  BigInt             @map("ticket_id")
+  ticket    Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  BigInt             @map("author_id")
+  author    User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  type      TicketFeedItemType
+  text      String?            @db.Text // NOTE only
+  field     TicketEventField? // EVENT only
+  oldValue  String?            @map("old_value") @db.VarChar(255)
+  newValue  String?            @map("new_value") @db.VarChar(255)
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  @@index([ticketId, id])
+  @@map("ticket_feed_item")
 }
 
 // Transit store for OTP delivery and rate limiting (ADR-0004). Send limits
