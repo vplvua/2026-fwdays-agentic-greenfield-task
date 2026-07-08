@@ -38,6 +38,11 @@ rules:
     - Reference the PRD requirement codes (FR-*/NFR-*) the slice covers.
     - Include a "Non-goals" section; scope that does not fit the slice is
       cut, not stretched.
+    - API error contract (fixed in S-02, design D6) - endpoints answer
+      with locale-free machine-readable codes (`{ code, message }`,
+      message in English); Ukrainian copy lives only in the SPA, which
+      maps the codes. New capabilities extend this contract - artifacts
+      must not specify "Ukrainian error messages" at the API level.
   tasks:
     - Final tasks of every change, in order — (1) all task checkboxes [x];
       (2) `npm run verify` (format, lint, typecheck, fallow audit,
