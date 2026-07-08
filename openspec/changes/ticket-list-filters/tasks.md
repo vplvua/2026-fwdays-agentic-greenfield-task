@@ -19,8 +19,8 @@
 
 ## 4. E2E and closing the slice
 
-- [ ] 4.1 api-e2e: list happy path, `ACTIVE`+house combination, search by requester surname, pagination page 2, overdue flags, foreign-user isolation, 400 on bad query
-- [ ] 4.2 Playwright (web-e2e) from the S-06 acceptance scenarios: combined filters «активні»+будинок, overdue row highlighted while closed twin is not, search finds by requester, load-more, filtered URL reload
+- [x] 4.1 api-e2e: list happy path, `ACTIVE`+house combination, search by requester surname, pagination page 2, overdue flags, foreign-user isolation, 400 on bad query
+- [x] 4.2 Playwright (web-e2e) from the S-06 acceptance scenarios: combined filters «активні»+будинок, overdue row highlighted while closed twin is not, search finds by requester, load-more, filtered URL reload
 - [ ] 4.3 All checkboxes above `[x]`, then `npm run verify` passes
 - [ ] 4.4 Smoke test on real MySQL: seed tickets across statuses/houses/due dates, exercise filters/search/sort/paging, check invariants and NFR-PERF-01 headroom
 - [ ] 4.5 Adversarial review by `slice-reviewer` (ADR-0010): freeze range at an explicit end SHA, no commits until the verdict; fix critical/high + re-verify, log medium/low dispositions
