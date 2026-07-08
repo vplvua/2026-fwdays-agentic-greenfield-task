@@ -13,11 +13,14 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmDialog, ConfirmData } from './components/confirm-dialog';
-import { HouseCard } from './components/house-card';
 import { HouseFormData, HouseFormDialog } from './components/house-form-dialog';
+import { HouseList } from './components/house-list';
 import { HouseDto, HouseInput } from './data/house.model';
 import { HousesFacade } from './data/houses-facade';
 
+// Container template = loading/content/error state machine; the branching
+// is the page's whole job (ADR-0009), splitting further adds indirection.
+// fallow-ignore-next-line complexity
 @Component({
   selector: 'app-houses-page',
   imports: [
@@ -26,7 +29,7 @@ import { HousesFacade } from './data/houses-facade';
     MatProgressSpinnerModule,
     MatToolbarModule,
     RouterLink,
-    HouseCard,
+    HouseList,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -40,35 +43,13 @@ import { HousesFacade } from './data/houses-facade';
       @if (facade.loading() && !facade.loaded()) {
         <mat-spinner class="spinner" [diameter]="32" />
       } @else if (facade.loaded()) {
-        @if (facade.houses().length === 0) {
-          <section class="empty">
-            <p>
-              У довіднику поки порожньо. Додайте перший будинок — до нього
-              прив'язуватимуться заявки.
-            </p>
-            <button matButton="filled" type="button" (click)="onCreate()">
-              Додати будинок
-            </button>
-          </section>
-        } @else {
-          <button
-            matButton="filled"
-            type="button"
-            class="add"
-            (click)="onCreate()"
-          >
-            <mat-icon>add</mat-icon>
-            Додати будинок
-          </button>
-          @for (house of facade.houses(); track house.id) {
-            <app-house-card
-              [house]="house"
-              [pending]="facade.pending()"
-              (edited)="onEdit(house)"
-              (deleted)="onDelete(house)"
-            />
-          }
-        }
+        <app-house-list
+          [houses]="facade.houses()"
+          [pending]="facade.pending()"
+          (created)="onCreate()"
+          (edited)="onEdit($event)"
+          (deleted)="onDelete($event)"
+        />
       } @else if (facade.error(); as error) {
         <section class="empty">
           <p role="alert">{{ error }}</p>
@@ -106,10 +87,6 @@ import { HousesFacade } from './data/houses-facade';
       gap: 1rem;
       justify-items: center;
       color: var(--mat-sys-on-surface-variant);
-    }
-
-    .add {
-      justify-self: start;
     }
   `,
 })

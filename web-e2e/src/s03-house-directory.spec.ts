@@ -51,6 +51,14 @@ test.describe('S-03 houses directory', () => {
     await expect(
       page.getByText('Вкажіть назву або адресу будинку'),
     ).toBeVisible();
+
+    // whitespace-only name is normalized and fails inline too (slice-review
+    // medium finding): the dialog must stay open, nothing reaches the API
+    await page.getByLabel('Назва або адреса').fill('   ');
+    await page.getByRole('button', { name: 'Зберегти' }).click();
+    await expect(
+      page.getByText('Вкажіть назву або адресу будинку'),
+    ).toBeVisible();
     // the dialog stays open, nothing is created
     await page.getByRole('button', { name: 'Скасувати' }).click();
     await expect(page.getByText('У довіднику поки порожньо')).toBeVisible();

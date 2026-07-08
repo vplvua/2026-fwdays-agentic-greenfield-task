@@ -94,12 +94,15 @@ export class HouseFormDialog {
 
   protected onSave(event: Event): void {
     event.preventDefault();
+    // Validators.required does not trim — normalize first so a
+    // whitespace-only name fails inline instead of closing the dialog
+    this.name.setValue(this.name.value.trim());
     if (this.name.invalid) {
       this.name.markAsTouched();
       return;
     }
     this.dialogRef.close({
-      name: this.name.value.trim(),
+      name: this.name.value,
       note: this.note.value.trim() || null,
     });
   }

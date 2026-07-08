@@ -12,20 +12,24 @@ import { HealthDto } from '../data/health.model';
         <mat-spinner diameter="16" aria-label="Перевіряємо стан" />
         Перевіряємо стан сервісу…
       </span>
-    } @else if (health(); as h) {
-      <span class="row" role="status">
-        <span
-          class="dot"
-          [class.dot-ok]="h.status === 'ok'"
-          [class.dot-error]="h.status !== 'ok'"
-        ></span>
-        @if (h.status === 'ok') {
-          Сервіс працює, база даних доступна
-        } @else {
-          Сервіс недоступний (база даних:
-          {{ h.db === 'up' ? 'доступна' : 'недоступна' }})
-        }
-      </span>
+    } @else {
+      <!-- plain @if, not @else if: fallow's template scan misses input
+           reads inside an @else if expression (false "unused input") -->
+      @if (health(); as h) {
+        <span class="row" role="status">
+          <span
+            class="dot"
+            [class.dot-ok]="h.status === 'ok'"
+            [class.dot-error]="h.status !== 'ok'"
+          ></span>
+          @if (h.status === 'ok') {
+            Сервіс працює, база даних доступна
+          } @else {
+            Сервіс недоступний (база даних:
+            {{ h.db === 'up' ? 'доступна' : 'недоступна' }})
+          }
+        </span>
+      }
     }
   `,
   styles: `
