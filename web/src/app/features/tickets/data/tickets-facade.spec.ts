@@ -147,6 +147,29 @@ describe('TicketsFacade', () => {
     expect(facade.pending()).toBe(false);
   });
 
+  it('keeps the fresh ticket when only the feed reload fails (S-05 review, medium)', async () => {
+    const moved: TicketDto = {
+      ...TICKET,
+      status: 'IN_PROGRESS',
+      allowedTransitions: ['DONE', 'REJECTED'],
+    };
+    let feedReads = 0;
+    const facade = setup({
+      get: () => of(TICKET),
+      getFeed: () =>
+        feedReads++ === 0
+          ? of([])
+          : throwError(() => apiError(500, 'INTERNAL')),
+      transition: () => of(moved),
+    });
+    await facade.load(12);
+    // the transition landed server-side; the follow-up feed GET failed
+    await expect(facade.transition(12, 'IN_PROGRESS')).resolves.toBe(false);
+    expect(facade.ticket()).toEqual(moved); // not the stale NEW card
+    expect(facade.error()).not.toBeNull(); // the user still sees a problem
+    expect(facade.pending()).toBe(false);
+  });
+
   it('forbidden transition maps the 409 code and keeps the state (FR-STATUS-02)', async () => {
     const facade = setup({
       get: () => of(TICKET),

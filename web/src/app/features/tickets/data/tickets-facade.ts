@@ -98,13 +98,12 @@ export class TicketsFacade {
     this.state.update((s) => ({ ...s, pending: true, error: null }));
     try {
       const ticket = await action();
+      // commit the mutation result before the feed reload: if that GET
+      // fails, the card must not keep showing the stale status/actions
+      // (S-05 review, medium)
+      if (ticket) this.state.update((s) => ({ ...s, ticket }));
       const feed = await firstValueFrom(this.api.getFeed(id));
-      this.state.update((s) => ({
-        ...s,
-        ticket: ticket ?? s.ticket,
-        feed,
-        pending: false,
-      }));
+      this.state.update((s) => ({ ...s, feed, pending: false }));
       return true;
     } catch (err) {
       this.state.update((s) => ({
