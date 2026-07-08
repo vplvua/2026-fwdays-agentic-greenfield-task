@@ -16,12 +16,12 @@
 
 ## 3. Web — ticket form and card (ADR-0009, /web-conventions, mobile-first)
 
-- [ ] 3.1 Scaffold `web/src/app/features/tickets/` per design D4 (layout per /web-conventions): lazy `tickets.routes.ts` under `authGuard` (`/tickets/new`, `/tickets/:id`, `/tickets/:id/edit`), `tickets-api.ts` (HttpClient, date↔string conversion at the boundary), `tickets-facade.ts` (signals: ticket/loading/pending/error + create/load/update), `ticket-labels.ts` (single source of Ukrainian labels for the three enums)
-- [ ] 3.2 Ticket form page (container, create + edit modes route-driven): house select fed from the houses API, category/priority selects from `ticket-labels.ts`, Material datepicker for the due date (clearable), text inputs for the rest; Ukrainian validation messages; empty house directory → hint linking to «Будинки» instead of a dead select; styles with `var(--mat-sys-*)` tokens only (В-04)
-- [ ] 3.3 Ticket card page (container) + presentational card: number #N, status chip, all FR-TICKET-01 attributes with Ukrainian labels, edit action → form; no transition/feed/attachment UI
-- [ ] 3.4 After successful create/edit navigate to `/tickets/:id`; API errors surfaced via snackbar in Ukrainian (map the new `TICKET_*` codes); verify the houses screen message for `HOUSE_HAS_TICKETS` reads well now that it can trigger
-- [ ] 3.5 Add «Нова заявка» navigation entry on the home screen and register the `/tickets` routes in `app.routes.ts`
-- [ ] 3.6 Web unit tests: tickets facade (create/load/update, error state), date conversion and null-clear mapping in the api service
+- [x] 3.1 Scaffold `web/src/app/features/tickets/` per design D4 (layout per /web-conventions): lazy `tickets.routes.ts` under `authGuard` (`/tickets/new`, `/tickets/:id`, `/tickets/:id/edit`), `tickets-api.ts` (HttpClient, date↔string conversion at the boundary), `tickets-facade.ts` (signals: ticket/loading/pending/error + create/load/update), `ticket-labels.ts` (single source of Ukrainian labels for the three enums)
+- [x] 3.2 Ticket form page (container, create + edit modes route-driven): house select fed from the houses API, category/priority selects from `ticket-labels.ts`, Material datepicker for the due date (clearable), text inputs for the rest; Ukrainian validation messages; empty house directory → hint linking to «Будинки» instead of a dead select; styles with `var(--mat-sys-*)` tokens only (В-04)
+- [x] 3.3 Ticket card page (container) + presentational card: number #N, status chip, all FR-TICKET-01 attributes with Ukrainian labels, edit action → form; no transition/feed/attachment UI
+- [x] 3.4 After successful create/edit navigate to `/tickets/:id`; API errors surfaced via snackbar in Ukrainian (map the new `TICKET_*` codes); verify the houses screen message for `HOUSE_HAS_TICKETS` reads well now that it can trigger
+- [x] 3.5 Add «Нова заявка» navigation entry on the home screen and register the `/tickets` routes in `app.routes.ts`
+- [x] 3.6 Web unit tests: tickets facade (create/load/update, error state), date conversion and null-clear mapping in the api service
 
 ## 4. Slice-level verification (DoD order)
 

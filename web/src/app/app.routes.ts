@@ -16,6 +16,12 @@ export const appRoutes: Route[] = [
       import('./features/houses/houses.routes').then((m) => m.housesRoutes),
   },
   {
+    path: 'tickets',
+    canActivate: [authGuard],
+    loadChildren: () =>
+      import('./features/tickets/tickets.routes').then((m) => m.ticketsRoutes),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadChildren: () =>

@@ -1,0 +1,119 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { TestBed } from '@angular/core/testing';
+import { of, throwError } from 'rxjs';
+import { TicketsApi } from './tickets-api';
+import { TicketsFacade } from './tickets-facade';
+import { TicketDto, fromWireDate, toWireDate } from './ticket.model';
+
+const TICKET: TicketDto = {
+  id: 12,
+  houseId: 1,
+  houseName: 'Шевченка 12',
+  title: 'Тече кран',
+  description: null,
+  category: 'PLUMBING',
+  priority: 'NORMAL',
+  status: 'NEW',
+  requesterName: null,
+  requesterPhone: null,
+  executor: null,
+  dueDate: null,
+  createdAt: '2026-07-08T00:00:00.000Z',
+  updatedAt: '2026-07-08T00:00:00.000Z',
+};
+
+const INPUT = {
+  title: TICKET.title,
+  description: null,
+  houseId: 1,
+  category: 'PLUMBING' as const,
+  priority: 'NORMAL' as const,
+  requesterName: null,
+  requesterPhone: null,
+  executor: null,
+  dueDate: null,
+};
+
+function apiError(status: number, code: string): HttpErrorResponse {
+  return new HttpErrorResponse({ status, error: { code, message: code } });
+}
+
+function setup(api: Partial<TicketsApi>): TicketsFacade {
+  TestBed.configureTestingModule({
+    providers: [{ provide: TicketsApi, useValue: api }],
+  });
+  return TestBed.inject(TicketsFacade);
+}
+
+describe('TicketsFacade', () => {
+  it('load fills the ticket (FR-TICKET-01)', async () => {
+    const facade = setup({ get: () => of(TICKET) });
+    await facade.load(12);
+    expect(facade.ticket()).toEqual(TICKET);
+    expect(facade.loading()).toBe(false);
+    expect(facade.error()).toBeNull();
+  });
+
+  it('load of a foreign/missing ticket maps the 404 code (FR-ACCESS-01)', async () => {
+    const facade = setup({
+      get: () => throwError(() => apiError(404, 'TICKET_NOT_FOUND')),
+    });
+    await facade.load(999);
+    expect(facade.ticket()).toBeNull();
+    expect(facade.error()).toBe('Заявку не знайдено');
+  });
+
+  it('create resolves to the saved ticket and keeps it in state', async () => {
+    const facade = setup({ create: () => of(TICKET) });
+    await expect(facade.create(INPUT)).resolves.toEqual(TICKET);
+    expect(facade.ticket()).toEqual(TICKET);
+    expect(facade.pending()).toBe(false);
+    expect(facade.error()).toBeNull();
+  });
+
+  it('create failure maps the API code to Ukrainian copy', async () => {
+    const facade = setup({
+      create: () => throwError(() => apiError(404, 'TICKET_HOUSE_NOT_FOUND')),
+    });
+    await expect(facade.create(INPUT)).resolves.toBeNull();
+    expect(facade.error()).toBe('Будинок не знайдено');
+    expect(facade.pending()).toBe(false);
+  });
+
+  it('update resolves to the fresh ticket (FR-TICKET-01 edit)', async () => {
+    const updated = { ...TICKET, executor: 'Майстер Петро' };
+    const facade = setup({ update: () => of(updated) });
+    await expect(
+      facade.update(12, { ...INPUT, executor: 'Майстер Петро' }),
+    ).resolves.toEqual(updated);
+    expect(facade.ticket()).toEqual(updated);
+  });
+
+  it('update failure surfaces the validation copy', async () => {
+    const facade = setup({
+      update: () => throwError(() => apiError(400, 'TICKET_TITLE_INVALID')),
+    });
+    await expect(facade.update(12, INPUT)).resolves.toBeNull();
+    expect(facade.error()).toBe('Вкажіть назву заявки');
+  });
+});
+
+// Design D5: the due date crosses the wire as a local calendar date —
+// no UTC conversion that could shift the day.
+describe('due date wire conversion', () => {
+  it('converts a local Date to YYYY-MM-DD by local parts', () => {
+    expect(toWireDate(new Date(2026, 6, 15))).toBe('2026-07-15');
+    expect(toWireDate(new Date(2026, 0, 1))).toBe('2026-01-01');
+  });
+
+  it('maps empty values to null (clears the date, FR-DUE-01)', () => {
+    expect(toWireDate(null)).toBeNull();
+    expect(fromWireDate(null)).toBeNull();
+  });
+
+  it('parses YYYY-MM-DD into a local Date and round-trips', () => {
+    const date = fromWireDate('2026-07-15');
+    expect(date).toEqual(new Date(2026, 6, 15));
+    expect(toWireDate(date)).toBe('2026-07-15');
+  });
+});

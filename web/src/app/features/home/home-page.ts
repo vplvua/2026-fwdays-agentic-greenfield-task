@@ -29,7 +29,11 @@ import { HealthFacade } from './data/health-facade';
   template: `
     <mat-toolbar class="toolbar">Сервіс-деск Mini</mat-toolbar>
     <main class="content">
-      <nav>
+      <nav class="nav">
+        <a matButton="filled" routerLink="/tickets/new">
+          <mat-icon>add</mat-icon>
+          Нова заявка
+        </a>
         <a matButton="outlined" routerLink="/houses">
           <mat-icon>home_work</mat-icon>
           Будинки
@@ -73,6 +77,12 @@ import { HealthFacade } from './data/health-facade';
       padding: 1rem;
       display: grid;
       gap: 1rem;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
   `,
 })
