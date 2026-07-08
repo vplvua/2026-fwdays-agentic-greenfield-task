@@ -10,7 +10,7 @@
 
 | Код | Зріз | Spec (openspec) | Тест | Demo check |
 |---|---|---|---|---|
-| FR-AUTH-01 | S-02 | [otp-auth](../openspec/specs/otp-auth/spec.md) «OTP can be requested…», «…creates the account on first login» | `otp.service.spec.ts` · `phone.spec.ts` · `api-e2e/auth.spec.ts` · `web-e2e/s02-otp-auth.spec.ts` (happy path) | вхід новим номером: локально (2026-07-08) |
+| FR-AUTH-01 | S-02 | [otp-auth](../openspec/specs/otp-auth/spec.md) «OTP can be requested…», «…creates the account on first login» | `otp.service.spec.ts` · `phone.spec.ts` · `api-e2e/auth.spec.ts` · `web-e2e/s02-otp-auth.spec.ts` (happy path) | вхід новим номером: локально + прод із реальним SMS, підтверджено користувачем (2026-07-08) |
 | FR-AUTH-02 | S-02 | [otp-auth](../openspec/specs/otp-auth/spec.md) «Failed verification attempts are limited», TTL/single-use сценарії | `otp.service.spec.ts` (TTL, спроби, reuse) · `api-e2e/auth.spec.ts` | 6-й неправильний код → нова помилка: локально (2026-07-08) |
 | FR-AUTH-03 | S-02 | [otp-auth](../openspec/specs/otp-auth/spec.md) «OTP sending is rate-limited server-side» | `otp.service.spec.ts` · `api-e2e/auth.spec.ts` (60s, daily) · `web-e2e/s02-otp-auth.spec.ts` (повідомлення) | повторний запит &lt;60с → зрозуміла помилка: локально (2026-07-08) |
 | FR-AUTH-04 | S-02 | [otp-auth](../openspec/specs/otp-auth/spec.md) «Session is a durable httpOnly cookie with explicit logout» | `session.service.spec.ts` · `api-e2e/auth.spec.ts` (30d, logout) · `web-e2e/s02-otp-auth.spec.ts` (reload, «Вийти») | сесія живе після перезавантаження; «Вийти» працює: локально (2026-07-08) |
