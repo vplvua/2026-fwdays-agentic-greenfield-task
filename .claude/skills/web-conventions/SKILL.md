@@ -3,114 +3,63 @@ name: web-conventions
 description: Angular frontend conventions for web/ — component layers, signals+facades state, folder structure, naming. Read BEFORE creating or modifying any Angular component, service, or route in web/src.
 ---
 
-# Web (Angular) Conventions
+# Web (Angular) Conventions — checklist
 
-Fixed by ADR-0009. The app is **Angular 21, standalone, zoneless** (no
-zone.js) — never rely on zone-based change detection. Small app (5 screens),
-so the architecture is deliberately two layers, not more (BC-PRIN-01).
+Fixed by ADR-0009. Angular 21, standalone, **zoneless** (no zone.js).
+Two layers only (BC-PRIN-01). Living examples: `features/houses/` and
+`features/auth/` — copy their shape, don't re-invent.
 
-## Component layers
+## Components — two kinds, nothing else
 
-Two kinds of components, nothing else:
+- **Container** (routed page or section): injects the feature facade via
+  `inject()`, handles loading/error/empty states. Max 2 levels
+  (page → section); no "item containers". Only containers call facade
+  methods.
+- **Presentational**: data in via `input()`, events out via `output()`.
+  No injected services. Local UI state (hover/expanded) as local signals
+  is fine; business data and loading state are NOT.
 
-- **Container** (page or section): injects the feature facade via
-  `inject()`, wires data down and events up, handles loading/error/empty
-  states. Routed pages are containers. Max 2 container levels
-  (page → section); no "item containers".
-- **Presentational**: ALL data via `input()` signals, ALL events via
-  `output()`. No injected services. Local UI state (hover, expanded, menu
-  open) is allowed as local `signal`s; business data and loading state are
-  NOT.
-
-Rules for both (aligned with the official Angular best-practices guide):
-`ChangeDetectionStrategy.OnPush` always; native control flow (`@if`/`@for`
-with `track`); do NOT write `standalone: true` (default since v20);
-`class`/`style` bindings instead of `ngClass`/`ngStyle`; host bindings in
-the `host` object of the decorator, not `@HostBinding`/`@HostListener`;
-prefer inline templates for small components; `NgOptimizedImage` for
-static images; no direct DOM manipulation; forms are **typed Reactive
-forms** (never template-driven); accessibility is not optional — WCAG AA
-basics (focus management, contrast, ARIA) on every screen; user-facing
-strings in Ukrainian.
+Both: `ChangeDetectionStrategy.OnPush` always · `@if`/`@for` with `track` ·
+no `standalone: true` (default) · `class`/`style` bindings, not
+`ngClass`/`ngStyle` · `host` object, not `@HostBinding`/`@HostListener` ·
+inline templates for small components · typed Reactive forms only
+(`Validators.required` does NOT trim — normalize before validating) ·
+`NgOptimizedImage` for static images · no direct DOM manipulation ·
+WCAG AA basics (focus, contrast, ARIA) · user-facing strings in Ukrainian.
 
 ## State: signals + facades (no NgRx)
 
-Per feature, in `features/<feature>/data/`:
+Per feature in `features/<feature>/data/`: **api service** (thin
+HttpClient wrapper, typed DTOs) + **facade** (one injectable: private
+writable signals, public `computed`, a method per user action;
+reload-after-mutation). Components never touch HttpClient or writable
+signals. Pattern reference: `features/houses/data/houses-facade.ts`.
 
-- **Api service** — thin HttpClient wrapper for the feature's endpoints,
-  returns typed DTOs.
-- **Facade** — one injectable per feature: private writable `signal`s,
-  public `computed`/readonly signals, methods for every user action
-  (they call the api service and update state). Components never touch
-  HttpClient or writable signals directly.
-
-```ts
-@Injectable({ providedIn: 'root' })
-export class HousesFacade {
-  private readonly api = inject(HousesApi);
-  private readonly state = signal<{
-    houses: House[];
-    loading: boolean;
-    error: string | null;
-  }>({
-    houses: [],
-    loading: false,
-    error: null,
-  });
-
-  readonly houses = computed(() => this.state().houses);
-  readonly loading = computed(() => this.state().loading);
-
-  async load(): Promise<void> {
-    /* set loading, call api, update state, handle error */
-  }
-}
-```
-
-## Folder structure
+## Structure & naming
 
 ```
-web/src/app/
-├── core/                    # app shell, auth guard/interceptor — singletons
-├── features/
-│   └── <feature>/           # auth, houses, tickets, ticket-list, ...
-│       ├── <feature>-page.ts        # routed page container
-│       ├── containers/              # section containers (if any)
-│       ├── components/              # presentational
-│       ├── data/                    # facade + api service + models
-│       └── <feature>.routes.ts      # lazy-loaded via loadChildren
-└── shared/                  # ONLY once used by 2+ features
+features/<feature>/
+  <feature>-page.ts     # routed container   → class HousesPage
+  containers/           # section containers (if any)
+  components/           # presentational     → house-card.ts, HouseCard
+  data/                 # facade + api + models → houses-facade.ts
+  <feature>.routes.ts   # lazy via loadChildren
 ```
 
-No `libs/` for web code until a second consumer exists.
-
-## Naming (Angular 21 style, matches the scaffold)
-
-- Files: kebab-case, **no** `.component`/`.service` suffixes (`app.ts`,
-  `houses-page.ts`, `house-card.ts`, `houses-facade.ts`).
-- Classes: role as suffix in the name — `HousesPage`, `HouseCard`,
-  `HousesFacade`, `HousesApi`.
-- Selectors: `app-` prefix, kebab-case (enforced by eslint).
-- Signal names: nouns (`houses`, `loading`), no `$` suffixes.
-
-## Data flow (memorize)
-
-facade signals → container → `input()` → presentational → `output()` →
-container → facade method. Only containers call facade methods.
+Kebab-case files, **no** `.component`/`.service` suffixes; selectors
+`app-*`; signal names are nouns (`houses`, `loading`), no `$`.
+`core/` = app shell/guards/interceptor singletons; `shared/` only once
+used by 2+ features; no `libs/` for a single consumer.
 
 ## Testing
 
-- Presentational: plain component tests via inputs/outputs, no mocks.
-- Facades: unit tests with a mocked api service.
-- Critical paths: Playwright specs in `web-e2e` (slice acceptance
-  scenarios, DoD п.4).
+Presentational → plain input/output tests, no mocks. Facades → unit tests
+with mocked api service. Critical paths → Playwright in `web-e2e`
+(slice acceptance scenarios, DoD п.4).
 
-## What NOT to introduce
+## Never introduce
 
-NgRx or any store lib; zone.js; item containers; `shared/` "just in case";
-`libs/*` for a single consumer; two-way binding of business state;
-`.component.ts` suffixes; `standalone: true` in decorators; `ngClass` /
-`ngStyle`; `@HostBinding` / `@HostListener`; template-driven forms;
-`any` (use `unknown` if the type is genuinely uncertain); `mutate` on
-signals (use `set`/`update`). The UI kit is decided in S-01 (В-01) —
-follow whatever ADR records it, don't add a second one.
+NgRx/store libs · zone.js · item containers · speculative `shared/` ·
+two-way binding of business state · template-driven forms · `any` (use
+`unknown`) · `mutate` on signals (`set`/`update`). UI kit is fixed by
+ADR-0011 (Angular Material) — don't add a second one.
