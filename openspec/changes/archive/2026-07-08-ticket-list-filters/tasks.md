@@ -23,8 +23,8 @@
 - [x] 4.2 Playwright (web-e2e) from the S-06 acceptance scenarios: combined filters «активні»+будинок, overdue row highlighted while closed twin is not, search finds by requester, load-more, filtered URL reload
 - [x] 4.3 All checkboxes above `[x]`, then `npm run verify` passes
 - [x] 4.4 Smoke test on real MySQL: seed tickets across statuses/houses/due dates, exercise filters/search/sort/paging, check invariants and NFR-PERF-01 headroom
-- [ ] 4.5 Adversarial review by `slice-reviewer` (ADR-0010): freeze range at an explicit end SHA, no commits until the verdict; fix critical/high + re-verify, log medium/low dispositions
+- [x] 4.5 Adversarial review by `slice-reviewer` (ADR-0010): freeze range at an explicit end SHA, no commits until the verdict; fix critical/high + re-verify, log medium/low dispositions
 - [x] 4.6 Launch-and-look: walk the S-06 happy path by eye (mobile viewport), note the fact in current-state
-- [ ] 4.7 Archive: `npx openspec validate ticket-list-filters --strict` → `/opsx:archive` → `npx openspec list` empty → `npx prettier --write openspec/specs/**/*.md`
-- [ ] 4.8 Update `docs/current-state.md` and `docs/traceability-matrix.md` (FR-LIST-01…04, FR-DUE-02, NFR-PERF-01, NFR-COMPAT-01 → spec → tests → demo check)
-- [ ] 4.9 Session retro via `/slice-retro` → `docs/cycles/S-06.md`
+- [x] 4.7 Archive: `npx openspec validate ticket-list-filters --strict` → `/opsx:archive` → `npx openspec list` empty → `npx prettier --write openspec/specs/**/*.md`
+- [x] 4.8 Update `docs/current-state.md` and `docs/traceability-matrix.md` (FR-LIST-01…04, FR-DUE-02, NFR-PERF-01, NFR-COMPAT-01 → spec → tests → demo check)
+- [x] 4.9 Session retro via `/slice-retro` → `docs/cycles/S-06.md`
