@@ -1,42 +1,7 @@
-import axios, { AxiosResponse } from 'axios';
+// S-02 otp-auth contract (FR-AUTH-01…04, NFR-SEC-01/02); shared login
+// plumbing lives in auth-helpers (reused by S-03+ authenticated suites).
+import { api, login, requestCode, uniquePhone } from './auth-helpers';
 import { dbClose, dbQuery } from './db';
-
-// S-02 otp-auth contract (FR-AUTH-01…04, NFR-SEC-01/02). Runs against the
-// served API in dev SMS mode: request-otp answers with devCode (ADR-0004),
-// so no SMS gateway and no log scraping is involved. Every test uses its
-// own phone number — rate limits are per phone, so tests stay independent.
-const api = axios.create({ validateStatus: () => true });
-
-let phoneCounter = 0;
-function uniquePhone(): string {
-  // +38067 + 7 digits built from time+counter, unique across runs
-  const suffix = (Date.now() % 1_000_000) * 10 + (phoneCounter++ % 10);
-  return `+38067${suffix.toString().padStart(7, '0').slice(-7)}`;
-}
-
-async function requestCode(phone: string): Promise<string> {
-  const res = await api.post('/api/auth/otp/request', { phone });
-  expect(res.status).toBe(200);
-  expect(res.data.devCode).toMatch(/^\d{6}$/);
-  return res.data.devCode;
-}
-
-function sessionCookie(res: AxiosResponse): string {
-  const setCookie = res.headers['set-cookie']?.find((c: string) =>
-    c.startsWith('sd_session='),
-  );
-  expect(setCookie).toBeDefined();
-  return (setCookie as string).split(';')[0];
-}
-
-async function login(
-  phone: string,
-): Promise<{ cookie: string; verifyRes: AxiosResponse }> {
-  const code = await requestCode(phone);
-  const verifyRes = await api.post('/api/auth/otp/verify', { phone, code });
-  expect(verifyRes.status).toBe(200);
-  return { cookie: sessionCookie(verifyRes), verifyRes };
-}
 
 afterAll(async () => {
   await dbClose();
