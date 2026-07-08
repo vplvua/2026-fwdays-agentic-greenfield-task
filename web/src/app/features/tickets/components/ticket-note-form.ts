@@ -25,12 +25,15 @@ import { MatInputModule } from '@angular/material/input';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <form class="form" (ngSubmit)="onSubmit()">
+    <!-- [formGroup] attaches FormGroupDirective — without it (ngSubmit)
+         never fires and the button falls through to a native page-reloading
+         submit (caught by the S-05 Playwright note scenario) -->
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
       <mat-form-field appearance="outline" class="field">
         <mat-label>Новий запис</mat-label>
         <textarea
           matInput
-          [formControl]="text"
+          formControlName="text"
           rows="2"
           maxlength="10000"
         ></textarea>
@@ -59,16 +62,19 @@ export class TicketNoteForm {
   readonly pending = input(false);
   readonly submitted = output<string>();
 
-  protected readonly text = inject(NonNullableFormBuilder).control('');
+  protected readonly form = inject(NonNullableFormBuilder).group({
+    text: '',
+  });
   protected showEmptyHint = false;
 
   protected onSubmit(): void {
+    const control = this.form.controls.text;
     // Validators.required does not trim — normalize before validating
-    const value = this.text.value.trim();
+    const value = control.value.trim();
     if (!value) {
       this.showEmptyHint = true;
-      this.text.setErrors({ required: true });
-      this.text.markAsTouched();
+      control.setErrors({ required: true });
+      control.markAsTouched();
       return;
     }
     this.showEmptyHint = false;
@@ -77,8 +83,8 @@ export class TicketNoteForm {
 
   /** The container confirms the note landed; only then the field empties. */
   clear(): void {
-    this.text.reset();
-    this.text.setErrors(null);
+    this.form.reset();
+    this.form.controls.text.setErrors(null);
     this.showEmptyHint = false;
   }
 }

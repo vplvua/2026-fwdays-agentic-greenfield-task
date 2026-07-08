@@ -125,7 +125,7 @@ describe('ticket creation (FR-TICKET-01/02, FR-STATUS-01)', () => {
     }
   });
 
-  it('never accepts a client-supplied status (transitions are S-05)', async () => {
+  it('never accepts a client-supplied status (transitions have their own endpoint)', async () => {
     const { cookie } = await loginUser();
     const houseId = await createHouse(cookie);
 

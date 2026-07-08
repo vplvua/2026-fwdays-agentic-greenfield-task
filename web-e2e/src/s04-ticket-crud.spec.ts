@@ -65,10 +65,13 @@ test.describe('S-04 ticket create/edit/card', () => {
     await page.getByLabel('Цільовий термін').fill('2026-07-20');
     await page.getByRole('button', { name: 'Зберегти' }).click();
 
-    // back on the card with the fresh values (FR-TICKET-01, FR-DUE-01)
+    // back on the card with the fresh values (FR-TICKET-01, FR-DUE-01);
+    // exact: the S-05 feed repeats the values inside its event sentences
     await expect(page).toHaveURL(new RegExp(`/tickets/${id}$`));
-    await expect(page.getByText('Майстер Петро')).toBeVisible();
-    await expect(page.getByText('20.07.2026')).toBeVisible();
+    await expect(
+      page.getByText('Майстер Петро', { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText('20.07.2026', { exact: true })).toBeVisible();
   });
 
   test('houses screen refuses deleting a house with a ticket (FR-HOUSE-02)', async ({
