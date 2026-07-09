@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { TicketsApi } from './tickets-api';
 import { TicketsFacade } from './tickets-facade';
 import {
+  AttachmentDto,
   DEFAULT_TICKET_LIST_FILTERS,
   FeedItemDto,
   TicketDto,
@@ -65,6 +66,24 @@ const STATUS_EVENT: FeedItemDto = {
   field: 'STATUS',
   oldValue: 'NEW',
   newValue: 'IN_PROGRESS',
+};
+
+const ATTACHMENT: AttachmentDto = {
+  id: 3,
+  fileName: 'кухня.jpg',
+  mimeType: 'image/jpeg',
+  size: 3_000_000,
+  createdAt: '2026-07-09T10:00:00.000Z',
+};
+
+const ATTACHMENT_EVENT: FeedItemDto = {
+  ...NOTE,
+  id: 4,
+  type: 'EVENT',
+  text: null,
+  field: 'ATTACHMENT',
+  oldValue: null,
+  newValue: 'кухня.jpg',
 };
 
 function apiError(status: number, code: string): HttpErrorResponse {
@@ -194,7 +213,11 @@ describe('TicketsFacade list (S-06)', () => {
 
 describe('TicketsFacade', () => {
   it('load fills the ticket and its feed (FR-TICKET-01, FR-FEED-01)', async () => {
-    const facade = setup({ get: () => of(TICKET), getFeed: () => of([NOTE]) });
+    const facade = setup({
+      get: () => of(TICKET),
+      getFeed: () => of([NOTE]),
+      listAttachments: () => of([]),
+    });
     await facade.load(12);
     expect(facade.ticket()).toEqual(TICKET);
     expect(facade.feed()).toEqual([NOTE]);
@@ -206,6 +229,8 @@ describe('TicketsFacade', () => {
     const facade = setup({
       get: () => throwError(() => apiError(404, 'TICKET_NOT_FOUND')),
       getFeed: () => throwError(() => apiError(404, 'TICKET_NOT_FOUND')),
+      listAttachments: () =>
+        throwError(() => apiError(404, 'TICKET_NOT_FOUND')),
     });
     await facade.load(999);
     expect(facade.ticket()).toBeNull();
@@ -257,6 +282,7 @@ describe('TicketsFacade', () => {
     const facade = setup({
       get: () => of(TICKET),
       getFeed: () => (feedReads++ === 0 ? of([]) : of([STATUS_EVENT])),
+      listAttachments: () => of([]),
       transition: () => of(moved),
     });
     await facade.load(12);
@@ -279,6 +305,7 @@ describe('TicketsFacade', () => {
         feedReads++ === 0
           ? of([])
           : throwError(() => apiError(500, 'INTERNAL')),
+      listAttachments: () => of([]),
       transition: () => of(moved),
     });
     await facade.load(12);
@@ -293,6 +320,7 @@ describe('TicketsFacade', () => {
     const facade = setup({
       get: () => of(TICKET),
       getFeed: () => of([]),
+      listAttachments: () => of([]),
       transition: () =>
         throwError(() => apiError(409, 'TICKET_TRANSITION_FORBIDDEN')),
     });
@@ -310,6 +338,7 @@ describe('TicketsFacade', () => {
     const facade = setup({
       get: () => of(TICKET),
       getFeed: () => (feedReads++ === 0 ? of([]) : of([NOTE])),
+      listAttachments: () => of([]),
       addNote: () => of(NOTE),
     });
     await facade.load(12);
@@ -330,14 +359,17 @@ describe('TicketsFacade', () => {
     const facade = setup({
       get: () => of(TICKET),
       getFeed: () => of([NOTE]),
+      listAttachments: () => of([ATTACHMENT]),
     });
     await facade.load(12);
     expect(facade.ticket()).toEqual(TICKET);
     expect(facade.feed()).toEqual([NOTE]);
+    expect(facade.attachments()).toEqual([ATTACHMENT]);
 
     facade.reset();
     expect(facade.ticket()).toBeNull();
     expect(facade.feed()).toEqual([]);
+    expect(facade.attachments()).toEqual([]);
     expect(facade.error()).toBeNull();
     expect(facade.pending()).toBe(false);
   });
@@ -345,6 +377,86 @@ describe('TicketsFacade', () => {
 
 // Design D5: the due date crosses the wire as a local calendar date —
 // no UTC conversion that could shift the day.
+describe('TicketsFacade attachments (S-07)', () => {
+  const loaded = (overrides: Partial<TicketsApi>) =>
+    setup({
+      get: () => of(TICKET),
+      getFeed: () => of([]),
+      listAttachments: () => of([]),
+      ...overrides,
+    });
+
+  it('uploadAttachment reloads the grid and the feed event together (FR-ATTACH-01, FR-FEED-02)', async () => {
+    let uploads = 0;
+    const facade = loaded({
+      listAttachments: () => (uploads === 0 ? of([]) : of([ATTACHMENT])),
+      getFeed: () => (uploads === 0 ? of([]) : of([ATTACHMENT_EVENT])),
+      uploadAttachment: () => {
+        uploads++;
+        return of(ATTACHMENT);
+      },
+    });
+    await facade.load(12);
+    const ok = await facade.uploadAttachment(
+      12,
+      new File(['x'], 'кухня.jpg', { type: 'image/jpeg' }),
+    );
+    expect(ok).toBe(true);
+    expect(facade.attachments()).toEqual([ATTACHMENT]);
+    expect(facade.feed()).toEqual([ATTACHMENT_EVENT]);
+    expect(facade.pending()).toBe(false);
+  });
+
+  it('rejected upload maps the API code and keeps the grid (FR-ATTACH-01)', async () => {
+    const facade = loaded({
+      uploadAttachment: () =>
+        throwError(() => apiError(400, 'ATTACHMENT_TYPE_INVALID')),
+    });
+    await facade.load(12);
+    const ok = await facade.uploadAttachment(
+      12,
+      new File(['x'], 'doc.pdf', { type: 'application/pdf' }),
+    );
+    expect(ok).toBe(false);
+    expect(facade.error()).toBe('Лише фото JPEG, PNG або WebP');
+    expect(facade.attachments()).toEqual([]);
+    expect(facade.pending()).toBe(false);
+  });
+
+  it('deleteAttachment removes the photo and reloads the feed (FR-ATTACH-02)', async () => {
+    let deletes = 0;
+    const facade = loaded({
+      listAttachments: () => (deletes === 0 ? of([ATTACHMENT]) : of([])),
+      getFeed: () =>
+        deletes === 0
+          ? of([])
+          : of([
+              { ...ATTACHMENT_EVENT, oldValue: 'кухня.jpg', newValue: null },
+            ]),
+      deleteAttachment: () => {
+        deletes++;
+        return of({ ok: true as const });
+      },
+    });
+    await facade.load(12);
+    const ok = await facade.deleteAttachment(12, ATTACHMENT.id);
+    expect(ok).toBe(true);
+    expect(facade.attachments()).toEqual([]);
+    expect(facade.feed()).toHaveLength(1);
+  });
+
+  it('deleteAttachment failure surfaces the 404 copy (FR-ACCESS-01)', async () => {
+    const facade = loaded({
+      deleteAttachment: () =>
+        throwError(() => apiError(404, 'ATTACHMENT_NOT_FOUND')),
+    });
+    await facade.load(12);
+    const ok = await facade.deleteAttachment(12, 99);
+    expect(ok).toBe(false);
+    expect(facade.error()).toBe('Фото не знайдено');
+  });
+});
+
 describe('due date wire conversion', () => {
   it('converts a local Date to YYYY-MM-DD by local parts', () => {
     expect(toWireDate(new Date(2026, 6, 15))).toBe('2026-07-15');

@@ -10,15 +10,28 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { ConfirmData, ConfirmDialog } from '../../shared/confirm-dialog';
+import {
+  AttachmentViewData,
+  AttachmentViewDialog,
+} from './components/attachment-view-dialog';
 import { TicketActions } from './components/ticket-actions';
+import { TicketAttachments } from './components/ticket-attachments';
 import { TicketCard } from './components/ticket-card';
 import { TicketFeed } from './components/ticket-feed';
 import { TicketNoteForm } from './components/ticket-note-form';
 import { TicketsFacade } from './data/tickets-facade';
-import { TicketStatus } from './data/ticket.model';
+import {
+  AttachmentDto,
+  TicketStatus,
+  attachmentPrecheckError,
+  attachmentUrl,
+} from './data/ticket.model';
 
 // Container: loads one ticket by the route id and shows its card, the
 // allowed transition actions (FR-STATUS-02) and the feed with the note form
@@ -36,6 +49,7 @@ import { TicketStatus } from './data/ticket.model';
     MatToolbarModule,
     RouterLink,
     TicketActions,
+    TicketAttachments,
     TicketCard,
     TicketFeed,
     TicketNoteForm,
@@ -68,6 +82,17 @@ import { TicketStatus } from './data/ticket.model';
           [pending]="facade.pending()"
           (transition)="onTransition(ticket.id, $event)"
         />
+        <section class="feed" aria-label="Фото заявки">
+          <h2 class="feed-title">Фото</h2>
+          <app-ticket-attachments
+            [attachments]="facade.attachments()"
+            [ticketId]="ticket.id"
+            [pending]="facade.pending()"
+            (view)="onViewAttachment(ticket.id, $event)"
+            (remove)="onRemoveAttachment(ticket.id, $event)"
+            (filesPicked)="onFilesPicked(ticket.id, $event)"
+          />
+        </section>
         <section class="feed" aria-label="Стрічка заявки">
           <h2 class="feed-title">Стрічка</h2>
           <app-ticket-feed [items]="facade.feed()" />
@@ -134,6 +159,7 @@ export class TicketCardPage {
   protected readonly facade = inject(TicketsFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
   private readonly noteForm = viewChild(TicketNoteForm);
 
   // reactive, not route.snapshot: the router reuses the component instance
@@ -159,6 +185,59 @@ export class TicketCardPage {
     // the field empties only when the note actually landed in the feed
     if (ok) this.noteForm()?.clear();
     else this.showError();
+  }
+
+  // Sequential upload (S-07 design D7): pre-check each file for instant
+  // feedback (the API stays the enforcement point), stop on the first
+  // failure — client-rejected or API-rejected alike.
+  protected async onFilesPicked(id: number, files: File[]): Promise<void> {
+    for (const file of files) {
+      const precheck = attachmentPrecheckError(
+        file,
+        this.facade.attachments().length,
+      );
+      if (precheck) {
+        this.snackBar.open(precheck, 'OK', { duration: 5000 });
+        return;
+      }
+      const ok = await this.facade.uploadAttachment(id, file);
+      if (!ok) {
+        this.showError();
+        return;
+      }
+    }
+  }
+
+  protected onViewAttachment(id: number, attachment: AttachmentDto): void {
+    this.dialog.open<AttachmentViewDialog, AttachmentViewData>(
+      AttachmentViewDialog,
+      {
+        data: {
+          url: attachmentUrl(id, attachment.id),
+          fileName: attachment.fileName,
+        },
+        maxWidth: '95vw',
+      },
+    );
+  }
+
+  protected async onRemoveAttachment(
+    id: number,
+    attachment: AttachmentDto,
+  ): Promise<void> {
+    const ref = this.dialog.open<ConfirmDialog, ConfirmData, boolean>(
+      ConfirmDialog,
+      {
+        data: {
+          title: `Видалити фото «${attachment.fileName}»?`,
+          confirmLabel: 'Видалити',
+        },
+      },
+    );
+    const confirmed = await firstValueFrom(ref.afterClosed());
+    if (confirmed && !(await this.facade.deleteAttachment(id, attachment.id))) {
+      this.showError();
+    }
   }
 
   private showError(): void {

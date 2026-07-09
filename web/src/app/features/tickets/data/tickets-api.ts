@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  AttachmentDto,
   FeedItemDto,
   TicketDto,
   TicketInput,
@@ -56,5 +57,26 @@ export class TicketsApi {
 
   addNote(id: number, text: string): Observable<FeedItemDto> {
     return this.http.post<FeedItemDto>(`/api/tickets/${id}/notes`, { text });
+  }
+
+  listAttachments(id: number): Observable<AttachmentDto[]> {
+    return this.http.get<AttachmentDto[]>(`/api/tickets/${id}/attachments`);
+  }
+
+  // Multipart with the single `file` part the API expects (S-07 design D1);
+  // the browser sets the boundary header itself.
+  uploadAttachment(id: number, file: File): Observable<AttachmentDto> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.post<AttachmentDto>(
+      `/api/tickets/${id}/attachments`,
+      form,
+    );
+  }
+
+  deleteAttachment(id: number, attachmentId: number): Observable<{ ok: true }> {
+    return this.http.delete<{ ok: true }>(
+      `/api/tickets/${id}/attachments/${attachmentId}`,
+    );
   }
 }

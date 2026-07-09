@@ -1,5 +1,7 @@
 import {
+  ATTACHMENT_MAX_FILE_SIZE,
   DEFAULT_TICKET_LIST_FILTERS,
+  attachmentPrecheckError,
   ticketListFiltersFromParams,
   ticketListFiltersToParams,
 } from './ticket.model';
@@ -96,5 +98,42 @@ describe('ticketListFiltersToParams', () => {
       order: 'asc',
     });
     expect(ticketListFiltersFromParams(params(wire))).toEqual(filters);
+  });
+});
+
+// Client-side upload pre-check (S-07 design D7): instant Ukrainian feedback,
+// the API stays the enforcement point.
+describe('attachmentPrecheckError', () => {
+  const jpeg = { type: 'image/jpeg', size: 3_000_000 };
+
+  it('passes an accepted image under the limits', () => {
+    expect(attachmentPrecheckError(jpeg, 0)).toBeNull();
+    expect(
+      attachmentPrecheckError({ ...jpeg, type: 'image/webp' }, 9),
+    ).toBeNull();
+  });
+
+  it('rejects HEIC and other types (Р-13)', () => {
+    expect(attachmentPrecheckError({ ...jpeg, type: 'image/heic' }, 0)).toBe(
+      'Лише фото JPEG, PNG або WebP',
+    );
+    expect(
+      attachmentPrecheckError({ ...jpeg, type: 'application/pdf' }, 0),
+    ).toBe('Лише фото JPEG, PNG або WebP');
+  });
+
+  it('rejects an oversize file (FR-ATTACH-01)', () => {
+    expect(
+      attachmentPrecheckError(
+        { ...jpeg, size: ATTACHMENT_MAX_FILE_SIZE + 1 },
+        0,
+      ),
+    ).toBe('Файл завеликий — до 10 МБ');
+  });
+
+  it('rejects the 11th photo (FR-ATTACH-01)', () => {
+    expect(attachmentPrecheckError(jpeg, 10)).toBe(
+      'До заявки можна додати щонайбільше 10 фото',
+    );
   });
 });

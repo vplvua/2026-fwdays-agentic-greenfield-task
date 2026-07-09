@@ -13,11 +13,11 @@
 
 ## 3. Web — card attachments section (read /web-conventions first; design D7)
 
-- [ ] 3.1 Facade/API layer: `Attachment` model, `list/upload/delete` in the tickets API service, facade state (attachments, loading/error, upload progress flag); Ukrainian copy for the new error codes
-- [ ] 3.2 Presentational attachments component in the ticket card: thumbnail grid (`<img loading="lazy">` on the binary URL), upload button with `accept="image/jpeg,image/png,image/webp" multiple` + client-side pre-checks, sequential upload, delete with confirm dialog (reuse houses confirm-dialog) — mobile-first
-- [ ] 3.3 Full-size view: Material dialog rendering the binary URL from the tapped thumbnail
-- [ ] 3.4 Feed rendering: Ukrainian sentences for `ATTACHMENT` events («Додано фото …» / «Видалено фото …»)
-- [ ] 3.5 Web unit tests: facade list/upload/delete flows and error mapping, attachments component (grid, rejected-upload message, confirm-delete), feed event rendering
+- [x] 3.1 Facade/API layer: `Attachment` model, `list/upload/delete` in the tickets API service, facade state (attachments, loading/error, upload progress flag); Ukrainian copy for the new error codes
+- [x] 3.2 Presentational attachments component in the ticket card: thumbnail grid (`<img loading="lazy">` on the binary URL), upload button with `accept="image/jpeg,image/png,image/webp" multiple` + client-side pre-checks, sequential upload, delete with confirm dialog (reuse houses confirm-dialog) — mobile-first
+- [x] 3.3 Full-size view: Material dialog rendering the binary URL from the tapped thumbnail
+- [x] 3.4 Feed rendering: Ukrainian sentences for `ATTACHMENT` events («Додано фото …» / «Видалено фото …»)
+- [x] 3.5 Web unit tests: facade list/upload/delete flows and error mapping, attachments component (grid, rejected-upload message, confirm-delete), feed event rendering
 
 ## 4. E2E and closing the slice
 

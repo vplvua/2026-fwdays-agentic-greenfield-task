@@ -171,8 +171,16 @@ export function ticketListFiltersToParams(
 // YYYY-MM-DD dates) — ticket-labels.ts composes the Ukrainian sentence.
 export type FeedItemType = 'NOTE' | 'EVENT';
 
+// ATTACHMENT events (S-07, FR-FEED-02) carry the original file name:
+// add → newValue, delete → oldValue.
 export type TicketEventField =
-  'STATUS' | 'HOUSE' | 'CATEGORY' | 'PRIORITY' | 'EXECUTOR' | 'DUE_DATE';
+  | 'STATUS'
+  | 'HOUSE'
+  | 'CATEGORY'
+  | 'PRIORITY'
+  | 'EXECUTOR'
+  | 'DUE_DATE'
+  | 'ATTACHMENT';
 
 export interface FeedItemDto {
   id: number;
@@ -184,6 +192,46 @@ export interface FeedItemDto {
   oldValue: string | null;
   newValue: string | null;
   createdAt: string;
+}
+
+// Attachment metadata (S-07 design D1): the original file name only — the
+// generated on-disk name never reaches the SPA (FR-ATTACH-03).
+export interface AttachmentDto {
+  id: number;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
+
+// Limits and types mirror the API validation (FR-ATTACH-01, Р-13); the API
+// stays the enforcement point — these only give instant feedback.
+export const ATTACHMENT_MAX_FILE_SIZE = 10 * 1024 * 1024;
+export const ATTACHMENT_MAX_PER_TICKET = 10;
+export const ATTACHMENT_ACCEPT = 'image/jpeg,image/png,image/webp';
+
+// Binaries are served only through the API with the session cookie riding
+// along same-origin (FR-ATTACH-03) — plain <img src> works as-is.
+export function attachmentUrl(ticketId: number, attachmentId: number): string {
+  return `/api/tickets/${ticketId}/attachments/${attachmentId}`;
+}
+
+/** Client-side pre-check before the upload starts (S-07 design D7):
+ *  Ukrainian message for the snackbar, or null when the file may go. */
+export function attachmentPrecheckError(
+  file: { type: string; size: number },
+  existingCount: number,
+): string | null {
+  if (existingCount >= ATTACHMENT_MAX_PER_TICKET) {
+    return MESSAGES.ATTACHMENT_LIMIT_REACHED;
+  }
+  if (!ATTACHMENT_ACCEPT.split(',').includes(file.type)) {
+    return MESSAGES.ATTACHMENT_TYPE_INVALID;
+  }
+  if (file.size > ATTACHMENT_MAX_FILE_SIZE) {
+    return MESSAGES.ATTACHMENT_TOO_LARGE;
+  }
+  return null;
 }
 
 // Field limits mirror the API validation (tickets.service.ts)
@@ -226,7 +274,12 @@ type TicketErrorCode =
   | 'TICKET_QUERY_INVALID'
   | 'TICKET_TRANSITION_FORBIDDEN'
   | 'TICKET_HOUSE_NOT_FOUND'
-  | 'TICKET_NOT_FOUND';
+  | 'TICKET_NOT_FOUND'
+  | 'ATTACHMENT_FILE_REQUIRED'
+  | 'ATTACHMENT_TYPE_INVALID'
+  | 'ATTACHMENT_TOO_LARGE'
+  | 'ATTACHMENT_LIMIT_REACHED'
+  | 'ATTACHMENT_NOT_FOUND';
 
 const MESSAGES: Record<TicketErrorCode, string> = {
   TICKET_TITLE_INVALID: 'Вкажіть назву заявки',
@@ -244,6 +297,11 @@ const MESSAGES: Record<TicketErrorCode, string> = {
     'Цей перехід статусу неможливий — оновіть сторінку',
   TICKET_HOUSE_NOT_FOUND: 'Будинок не знайдено',
   TICKET_NOT_FOUND: 'Заявку не знайдено',
+  ATTACHMENT_FILE_REQUIRED: 'Оберіть файл для завантаження',
+  ATTACHMENT_TYPE_INVALID: 'Лише фото JPEG, PNG або WebP',
+  ATTACHMENT_TOO_LARGE: 'Файл завеликий — до 10 МБ',
+  ATTACHMENT_LIMIT_REACHED: 'До заявки можна додати щонайбільше 10 фото',
+  ATTACHMENT_NOT_FOUND: 'Фото не знайдено',
 };
 
 const FALLBACK_MESSAGE = 'Щось пішло не так. Спробуйте ще раз';

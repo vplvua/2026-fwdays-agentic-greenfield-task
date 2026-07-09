@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TicketsApi } from './tickets-api';
 import {
+  AttachmentDto,
   DEFAULT_TICKET_LIST_FILTERS,
   FeedItemDto,
   TicketDto,
@@ -15,6 +16,7 @@ import {
 interface TicketsState {
   ticket: TicketDto | null;
   feed: FeedItemDto[];
+  attachments: AttachmentDto[];
   loading: boolean;
   pending: boolean;
   error: string | null;
@@ -23,6 +25,7 @@ interface TicketsState {
 const INITIAL_STATE: TicketsState = {
   ticket: null,
   feed: [],
+  attachments: [],
   loading: false,
   pending: false,
   error: null,
@@ -71,6 +74,7 @@ export class TicketsFacade {
   // fallow-ignore-next-line code-duplication
   readonly ticket = computed(() => this.state().ticket);
   readonly feed = computed(() => this.state().feed);
+  readonly attachments = computed(() => this.state().attachments);
   readonly loading = computed(() => this.state().loading);
   readonly pending = computed(() => this.state().pending);
   readonly error = computed(() => this.state().error);
@@ -160,23 +164,31 @@ export class TicketsFacade {
     this.state.set(INITIAL_STATE);
   }
 
-  // The card loads the ticket and its feed together: one loading flag, the
-  // ticket read decides the error state (the feed 404s exactly when the
-  // ticket does — same owner check).
+  // The card loads the ticket, its feed and its attachments together: one
+  // loading flag, the ticket read decides the error state (feed and
+  // attachments 404 exactly when the ticket does — same owner check).
   async load(id: number): Promise<void> {
     this.state.update((s) => ({
       ...s,
       ticket: null,
       feed: [],
+      attachments: [],
       loading: true,
       error: null,
     }));
     try {
-      const [ticket, feed] = await Promise.all([
+      const [ticket, feed, attachments] = await Promise.all([
         firstValueFrom(this.api.get(id)),
         firstValueFrom(this.api.getFeed(id)),
+        firstValueFrom(this.api.listAttachments(id)),
       ]);
-      this.state.update((s) => ({ ...s, ticket, feed, loading: false }));
+      this.state.update((s) => ({
+        ...s,
+        ticket,
+        feed,
+        attachments,
+        loading: false,
+      }));
     } catch (err) {
       this.state.update((s) => ({
         ...s,
@@ -217,6 +229,45 @@ export class TicketsFacade {
       if (ticket) this.state.update((s) => ({ ...s, ticket }));
       const feed = await firstValueFrom(this.api.getFeed(id));
       this.state.update((s) => ({ ...s, feed, pending: false }));
+      return true;
+    } catch (err) {
+      this.state.update((s) => ({
+        ...s,
+        pending: false,
+        error: ticketErrorMessage(err),
+      }));
+      return false;
+    }
+  }
+
+  /** Resolves to true when the photo landed; the attachments grid and the
+   *  feed (its ATTACHMENT event) are reloaded together (design D5/D7:
+   *  reload-after-mutation, no optimistic state). */
+  async uploadAttachment(id: number, file: File): Promise<boolean> {
+    return this.mutateAttachments(id, () =>
+      firstValueFrom(this.api.uploadAttachment(id, file)),
+    );
+  }
+
+  /** Resolves to true when the photo is gone (FR-ATTACH-02). */
+  async deleteAttachment(id: number, attachmentId: number): Promise<boolean> {
+    return this.mutateAttachments(id, () =>
+      firstValueFrom(this.api.deleteAttachment(id, attachmentId)),
+    );
+  }
+
+  private async mutateAttachments(
+    id: number,
+    action: () => Promise<unknown>,
+  ): Promise<boolean> {
+    this.state.update((s) => ({ ...s, pending: true, error: null }));
+    try {
+      await action();
+      const [attachments, feed] = await Promise.all([
+        firstValueFrom(this.api.listAttachments(id)),
+        firstValueFrom(this.api.getFeed(id)),
+      ]);
+      this.state.update((s) => ({ ...s, attachments, feed, pending: false }));
       return true;
     } catch (err) {
       this.state.update((s) => ({

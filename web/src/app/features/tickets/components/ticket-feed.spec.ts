@@ -51,6 +51,27 @@ describe('TicketFeed', () => {
     expect(note?.textContent).toContain('08.07.2026');
   });
 
+  it('renders attachment events as Ukrainian sentences (S-07, FR-FEED-02)', async () => {
+    const added: FeedItemDto = {
+      ...EVENT,
+      id: 3,
+      field: 'ATTACHMENT',
+      oldValue: null,
+      newValue: 'кухня.jpg',
+    };
+    const removed: FeedItemDto = {
+      ...EVENT,
+      id: 4,
+      field: 'ATTACHMENT',
+      oldValue: 'кухня.jpg',
+      newValue: null,
+    };
+    const fixture = await setup([added, removed]);
+    const events = fixture.nativeElement.querySelectorAll('li.event');
+    expect(events[0]?.textContent).toContain('Додано фото «кухня.jpg»');
+    expect(events[1]?.textContent).toContain('Видалено фото «кухня.jpg»');
+  });
+
   it('shows the empty hint when the feed has no items yet', async () => {
     const fixture = await setup([]);
     expect(fixture.nativeElement.textContent).toContain('Записів ще немає');

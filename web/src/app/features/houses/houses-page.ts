@@ -12,7 +12,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { ConfirmDialog, ConfirmData } from './components/confirm-dialog';
+import { ConfirmDialog, ConfirmData } from '../../shared/confirm-dialog';
 import { HouseFormData, HouseFormDialog } from './components/house-form-dialog';
 import { HouseList } from './components/house-list';
 import { HouseDto, HouseInput } from './data/house.model';

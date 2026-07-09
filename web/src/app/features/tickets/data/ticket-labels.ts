@@ -76,7 +76,10 @@ export function transitionActionLabel(
 // System-event rendering (FR-FEED-02): the wire carries locale-free
 // field/oldValue/newValue snapshots; the Ukrainian sentence is composed
 // here and nowhere else.
-const EVENT_FIELD_LABELS: Record<TicketEventField, string> = {
+const EVENT_FIELD_LABELS: Record<
+  Exclude<TicketEventField, 'ATTACHMENT'>,
+  string
+> = {
   STATUS: 'Статус',
   HOUSE: 'Будинок',
   CATEGORY: 'Категорія',
@@ -112,9 +115,15 @@ function eventValueLabel(
   return EVENT_VALUE_TABLES[field]?.[value] ?? value;
 }
 
-/** «Статус: Нова → В роботі», «Виконавець: — → Майстер Петро», … */
+/** «Статус: Нова → В роботі», «Виконавець: — → Майстер Петро»,
+ *  «Додано фото «кухня.jpg»» / «Видалено фото «кухня.jpg»» (S-07). */
 export function eventText(item: FeedItemDto): string {
   if (!item.field) return '';
+  if (item.field === 'ATTACHMENT') {
+    return item.newValue !== null
+      ? `Додано фото «${item.newValue}»`
+      : `Видалено фото «${item.oldValue ?? ''}»`;
+  }
   const label = EVENT_FIELD_LABELS[item.field];
   const oldValue = eventValueLabel(item.field, item.oldValue);
   const newValue = eventValueLabel(item.field, item.newValue);
