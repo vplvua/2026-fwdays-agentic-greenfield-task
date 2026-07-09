@@ -96,6 +96,7 @@ model Ticket {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
   feedItems      TicketFeedItem[]
+  attachments    Attachment[]
 
   // Composite indexes for the owner-scoped filtered list (NFR-PERF-01,
   // S-06 design D6); [userId, status] also keeps the userId FK indexed.
@@ -112,6 +113,8 @@ enum TicketFeedItemType {
 }
 
 // Which ticket field a system EVENT records (FR-STATUS-03, FR-TICKET-03).
+// ATTACHMENT covers add/delete of a photo (FR-FEED-02, S-07 design D5):
+// add → newValue = original file name, delete → oldValue = original file name.
 enum TicketEventField {
   STATUS
   HOUSE
@@ -119,6 +122,7 @@ enum TicketEventField {
   PRIORITY
   EXECUTOR
   DUE_DATE
+  ATTACHMENT
 }
 
 // Items are immutable (no updatedAt, no update/delete API). EVENT values are
@@ -139,6 +143,25 @@ model TicketFeedItem {
 
   @@index([ticketId, id])
   @@map("ticket_feed_item")
+}
+
+// Photo attachment metadata (FR-ATTACH-01…03, ADR-0003, S-07 design D2).
+// Ownership is derived through the ticket — no denormalized userId to drift.
+// `storedName` is the generated on-disk name (never leaves the API);
+// `fileName` is the original upload name shown to the user. The original
+// bytes live in ATTACHMENTS_DIR (Railway Volume in prod, NFR-STOR-01).
+model Attachment {
+  id         BigInt   @id @default(autoincrement())
+  ticketId   BigInt   @map("ticket_id")
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fileName   String   @map("file_name") @db.VarChar(255)
+  storedName String   @unique @map("stored_name") @db.VarChar(64)
+  mimeType   String   @map("mime_type") @db.VarChar(32)
+  size       Int
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([ticketId])
+  @@map("attachment")
 }
 
 // Transit store for OTP delivery and rate limiting (ADR-0004). Send limits

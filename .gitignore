@@ -34,6 +34,9 @@ obj/
 # Generated Prisma client (npx prisma generate)
 api/src/generated/
 
+# Local attachment storage (S-07, ADR-0003 — dev default for ATTACHMENTS_DIR)
+.data/
+
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs

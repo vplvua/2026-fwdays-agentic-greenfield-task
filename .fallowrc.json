@@ -8,6 +8,7 @@
     "@angular/language-service",
     "@eslint/js",
     "@nestjs/schematics",
+    "@nx/devkit",
     "@schematics/angular",
     "@swc/helpers",
     "@typescript-eslint/utils",

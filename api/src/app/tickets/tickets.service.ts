@@ -132,8 +132,9 @@ function parseBodyHouseId(value: unknown): bigint {
 }
 
 // Route :id → BigInt; anything non-numeric is simply "not found" — the same
-// 404 as a missing or foreign ticket (FR-ACCESS-01).
-function parseTicketId(raw: string): bigint | null {
+// 404 as a missing or foreign object (FR-ACCESS-01). Shared with the
+// attachments module (S-07), which applies the same rule to its ids.
+export function parseRouteId(raw: string): bigint | null {
   if (!/^\d{1,18}$/.test(raw)) return null;
   return BigInt(raw);
 }
@@ -344,7 +345,7 @@ export class TicketsService {
   }
 
   async get(userId: bigint, rawId: string): Promise<TicketWithHouse> {
-    const id = parseTicketId(rawId);
+    const id = parseRouteId(rawId);
     const ticket = id
       ? await this.prisma.ticket.findFirst({
           where: { id, userId },
@@ -366,7 +367,7 @@ export class TicketsService {
     rawId: string,
     input: TicketInput,
   ): Promise<TicketWithHouse> {
-    const id = parseTicketId(rawId);
+    const id = parseRouteId(rawId);
     if (!id) throw notFound();
     const body = input ?? {};
     // only fields present in the body are normalized and written; status is
@@ -476,7 +477,7 @@ export class TicketsService {
     rawId: string,
     input: { to?: unknown } | undefined,
   ): Promise<TicketWithHouse> {
-    const id = parseTicketId(rawId);
+    const id = parseRouteId(rawId);
     if (!id) throw notFound();
     const to = normalizeTargetStatus(input?.to);
     return this.prisma.$transaction(async (tx) => {
@@ -518,7 +519,7 @@ export class TicketsService {
   // Full chronological feed (PRD §5.5): ORDER BY id — auto-increment breaks
   // same-timestamp ties. No pagination at POC scale (design D2).
   async getFeed(userId: bigint, rawId: string): Promise<FeedItemWithAuthor[]> {
-    const id = parseTicketId(rawId);
+    const id = parseRouteId(rawId);
     const ticket = id
       ? await this.prisma.ticket.findFirst({
           where: { id, userId },
@@ -540,7 +541,7 @@ export class TicketsService {
     rawId: string,
     input: { text?: unknown } | undefined,
   ): Promise<FeedItemWithAuthor> {
-    const id = parseTicketId(rawId);
+    const id = parseRouteId(rawId);
     if (!id) throw notFound();
     const text = normalizeNote(input?.text);
     const ticket = await this.prisma.ticket.findFirst({

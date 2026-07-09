@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AttachmentsModule } from './attachments/attachments.module';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { HousesModule } from './houses/houses.module';
@@ -13,6 +14,7 @@ import { TicketsModule } from './tickets/tickets.module';
     HealthModule,
     HousesModule,
     TicketsModule,
+    AttachmentsModule,
     SpaModule.forRoot(),
   ],
 })
