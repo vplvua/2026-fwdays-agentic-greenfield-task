@@ -68,6 +68,12 @@ must chain steps through **in-app navigation** (routerLink clicks), not
 `page.goto()` — a hard reload resets singleton state and masks stale-facade
 bugs (S-04 high finding).
 
+Vitest DOM quirks (S-07): no `DataTransfer` — stub a file input with
+`Object.defineProperty(input, 'files', { value: [file] })`; `img.loading`
+as a property is `undefined` — assert `getAttribute('loading')`; a second
+`TestBed.configureTestingModule` in one `it` throws — one setup per test,
+split instead of reconfiguring.
+
 ## Never introduce
 
 NgRx/store libs · zone.js · item containers · speculative `shared/` ·
