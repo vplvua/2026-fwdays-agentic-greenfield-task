@@ -240,25 +240,39 @@ export class TicketsFacade {
     }
   }
 
-  /** Resolves to true when the photo landed; the attachments grid and the
-   *  feed (its ATTACHMENT event) are reloaded together (design D5/D7:
-   *  reload-after-mutation, no optimistic state). */
+  /** Resolves to true when the photo landed and the grid+feed refreshed. */
   async uploadAttachment(id: number, file: File): Promise<boolean> {
-    return this.mutateAttachments(id, () =>
-      firstValueFrom(this.api.uploadAttachment(id, file)),
-    );
+    return this.mutateAttachments(id, async () => {
+      const attachment = await firstValueFrom(
+        this.api.uploadAttachment(id, file),
+      );
+      // commit the new photo before the reload: if that GET fails, the grid
+      // must not hide a photo that is already stored server-side (slice
+      // review S-07, medium — same principle as the S-05 mutateWithFeed fix)
+      this.state.update((s) => ({
+        ...s,
+        attachments: [...s.attachments, attachment],
+      }));
+    });
   }
 
   /** Resolves to true when the photo is gone (FR-ATTACH-02). */
   async deleteAttachment(id: number, attachmentId: number): Promise<boolean> {
-    return this.mutateAttachments(id, () =>
-      firstValueFrom(this.api.deleteAttachment(id, attachmentId)),
-    );
+    return this.mutateAttachments(id, async () => {
+      await firstValueFrom(this.api.deleteAttachment(id, attachmentId));
+      // same commit-before-reload rule for the removal
+      this.state.update((s) => ({
+        ...s,
+        attachments: s.attachments.filter((a) => a.id !== attachmentId),
+      }));
+    });
   }
 
+  // The action commits its own state change, then the authoritative reload
+  // replaces the grid and brings the ATTACHMENT feed event in (design D5/D7).
   private async mutateAttachments(
     id: number,
-    action: () => Promise<unknown>,
+    action: () => Promise<void>,
   ): Promise<boolean> {
     this.state.update((s) => ({ ...s, pending: true, error: null }));
     try {

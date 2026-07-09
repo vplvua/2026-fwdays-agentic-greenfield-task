@@ -204,6 +204,31 @@ describe('upload validation (FR-ATTACH-01, Р-13)', () => {
     expect(eleventh.data.code).toBe('ATTACHMENT_LIMIT_REACHED');
   });
 
+  it('answers the contract shape for a malformed multipart (two file parts)', async () => {
+    const { cookie } = await loginUser();
+    const ticketId = await createTicket(cookie);
+    const form = new FormData();
+    form.append(
+      'file',
+      new Blob([new Uint8Array(JPEG_BYTES)], { type: 'image/jpeg' }),
+      'a.jpg',
+    );
+    form.append(
+      'file',
+      new Blob([new Uint8Array(JPEG_BYTES)], { type: 'image/jpeg' }),
+      'b.jpg',
+    );
+    const res = await api.post(
+      `/api/tickets/${ticketId}/attachments`,
+      form,
+      authed(cookie),
+    );
+    // multer's LIMIT_UNEXPECTED_FILE must not leak Nest's default body
+    // (slice review S-07, low)
+    expect(res.status).toBe(400);
+    expect(res.data.code).toBe('ATTACHMENT_FILE_REQUIRED');
+  });
+
   it('rejects a multipart request without the file part', async () => {
     const { cookie } = await loginUser();
     const ticketId = await createTicket(cookie);

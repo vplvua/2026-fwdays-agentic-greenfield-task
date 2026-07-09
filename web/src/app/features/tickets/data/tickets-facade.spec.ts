@@ -407,6 +407,28 @@ describe('TicketsFacade attachments (S-07)', () => {
     expect(facade.pending()).toBe(false);
   });
 
+  it('keeps the committed photo when only the reload fails (S-07 review, medium)', async () => {
+    let uploaded = false;
+    const facade = loaded({
+      listAttachments: () =>
+        uploaded ? throwError(() => apiError(500, 'INTERNAL')) : of([]),
+      uploadAttachment: () => {
+        uploaded = true;
+        return of(ATTACHMENT);
+      },
+    });
+    await facade.load(12);
+    // the upload landed server-side; the follow-up reload failed
+    const ok = await facade.uploadAttachment(
+      12,
+      new File(['x'], 'кухня.jpg', { type: 'image/jpeg' }),
+    );
+    expect(ok).toBe(false);
+    expect(facade.attachments()).toEqual([ATTACHMENT]); // not hidden
+    expect(facade.error()).not.toBeNull(); // the user still sees a problem
+    expect(facade.pending()).toBe(false);
+  });
+
   it('rejected upload maps the API code and keeps the grid (FR-ATTACH-01)', async () => {
     const facade = loaded({
       uploadAttachment: () =>

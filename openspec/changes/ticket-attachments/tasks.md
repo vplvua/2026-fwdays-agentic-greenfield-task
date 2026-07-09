@@ -24,9 +24,9 @@
 - [x] 4.1 api-e2e: upload happy path + feed event, PDF/HEIC/oversize/11th rejections, metadata list, binary round-trip, delete + feed event, foreign-user 404-parity on all four endpoints
 - [x] 4.2 Playwright (web-e2e) from the S-07 acceptance scenarios: add a photo → thumbnail + full size + feed event; rejected file shows an understandable error; delete removes the thumbnail after confirm
 - [ ] 4.3 All checkboxes above `[x]`, then `npm run verify` passes
-- [ ] 4.4 Smoke test on real MySQL + disk: upload/view/delete against the running API, check DB↔disk invariants, restart the API and confirm files still serve (NFR-STOR-01)
-- [ ] 4.5 Adversarial review by `slice-reviewer` (ADR-0010): freeze range at an explicit end SHA, no commits until the verdict; fix critical/high + re-verify, log medium/low dispositions
-- [ ] 4.6 Launch-and-look: walk the S-07 happy path by eye (mobile viewport), note the fact in current-state
+- [x] 4.4 Smoke test on real MySQL + disk: upload/view/delete against the running API, check DB↔disk invariants, restart the API and confirm files still serve (NFR-STOR-01)
+- [x] 4.5 Adversarial review by `slice-reviewer` (ADR-0010): freeze range at an explicit end SHA, no commits until the verdict; fix critical/high + re-verify, log medium/low dispositions
+- [x] 4.6 Launch-and-look: walk the S-07 happy path by eye (mobile viewport), note the fact in current-state
 - [ ] 4.7 Prod wiring: mount the Railway Volume, set `ATTACHMENTS_DIR` via `railway variables --set`, deploy and re-check a photo survives a redeploy (design Migration Plan)
 - [ ] 4.8 Archive: `npx openspec validate ticket-attachments --strict` → `/opsx:archive` → `npx openspec list` empty → `npx prettier --write openspec/specs/**/*.md`
 - [ ] 4.9 Update `docs/current-state.md` and `docs/traceability-matrix.md` (FR-ATTACH-01…03, NFR-STOR-01 → spec → tests → demo check)

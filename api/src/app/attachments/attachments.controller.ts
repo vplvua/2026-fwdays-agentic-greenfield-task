@@ -1,6 +1,7 @@
 import { createReadStream } from 'node:fs';
 import {
   ArgumentsHost,
+  BadRequestException,
   Catch,
   Controller,
   Delete,
@@ -48,17 +49,27 @@ function toAttachmentDto(attachment: AttachmentModel): AttachmentDto {
   };
 }
 
-// Multer aborts an oversize upload before the handler runs and Nest surfaces
-// it as a 413 — remap to the locale-free { code, message } contract the SPA
-// expects (design D4). Scoped to the upload route via @UseFilters.
-@Catch(PayloadTooLargeException)
-class AttachmentTooLargeFilter implements ExceptionFilter {
-  catch(_exception: PayloadTooLargeException, host: ArgumentsHost): void {
+// Multer aborts a bad multipart request before the handler runs and Nest
+// surfaces it as a framework exception with the default body shape: 413 for
+// an oversize file, 400 for a wrong/extra file field (LIMIT_UNEXPECTED_FILE
+// etc.) — remap both to the locale-free { code, message } contract the SPA
+// expects (design D4; slice review S-07, low). Scoped to the upload route
+// via @UseFilters; service-thrown AttachmentError is a plain HttpException
+// subclass, not BadRequestException, so it passes through untouched.
+@Catch(PayloadTooLargeException, BadRequestException)
+class AttachmentUploadErrorFilter implements ExceptionFilter {
+  catch(exception: PayloadTooLargeException, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
-    const error = new AttachmentError(
-      'ATTACHMENT_TOO_LARGE',
-      `File is larger than ${ATTACHMENT_MAX_FILE_SIZE} bytes`,
-    );
+    const error =
+      exception instanceof PayloadTooLargeException
+        ? new AttachmentError(
+            'ATTACHMENT_TOO_LARGE',
+            `File is larger than ${ATTACHMENT_MAX_FILE_SIZE} bytes`,
+          )
+        : new AttachmentError(
+            'ATTACHMENT_FILE_REQUIRED',
+            'Send exactly one file in the "file" multipart field',
+          );
     response.status(error.getStatus()).json(error.getResponse());
   }
 }
@@ -89,7 +100,7 @@ export class AttachmentsController {
       defParamCharset: 'utf8',
     }),
   )
-  @UseFilters(AttachmentTooLargeFilter)
+  @UseFilters(AttachmentUploadErrorFilter)
   async upload(
     @Req() req: AuthenticatedRequest,
     @Param('ticketId') ticketId: string,
