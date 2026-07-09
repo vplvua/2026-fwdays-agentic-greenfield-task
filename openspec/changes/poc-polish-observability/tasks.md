@@ -22,7 +22,7 @@
 
 ## 2. End-to-end production pass (PRD §3.2 / §6)
 
-- [ ] 2.1 Deploy the slice to Railway via `railway up`; confirm health green
+- [x] 2.1 Deploy the slice to Railway via `railway up`; confirm health green
       and JSON request logs visible in `railway logs`
 - [ ] 2.2 Full happy-path §6 walk on prod with a real user and real SMS
       (user-assisted): registration → house → ticket with photo → executor +
