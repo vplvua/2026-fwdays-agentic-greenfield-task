@@ -43,6 +43,12 @@ rules:
       message in English); Ukrainian copy lives only in the SPA, which
       maps the codes. New capabilities extend this contract - artifacts
       must not specify "Ukrainian error messages" at the API level.
+    - Before describing existing behavior in a new requirement ("this
+      already exists and is folded into the spec"), verify it against the
+      code - including its comments, which may document a wider or
+      narrower design than assumed. Specs pin actual behavior, not
+      intent (S-08 - only failed OTP sends were logged, and the
+      dev-sender exception was wider than first specced).
   tasks:
     - Final tasks of every change, in order — (1) all task checkboxes [x];
       (2) `npm run verify` (format, lint, typecheck, fallow audit,

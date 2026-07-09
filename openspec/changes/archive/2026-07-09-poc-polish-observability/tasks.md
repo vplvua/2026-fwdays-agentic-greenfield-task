@@ -71,4 +71,4 @@
       `openspec/specs/**/*.md`
 - [x] 5.8 Update `docs/current-state.md` (phase: POC closed; done / next /
       blockers)
-- [ ] 5.9 Session retrospective via `/slice-retro` → `docs/cycles/S-08.md`
+- [x] 5.9 Session retrospective via `/slice-retro` → `docs/cycles/S-08.md`
