@@ -55,13 +55,13 @@
 
 ## 5. Slice DoD (fixed order, openspec/config.yaml)
 
-- [ ] 5.1 All task checkboxes above are `[x]`
-- [ ] 5.2 `npm run verify` passes
-- [ ] 5.3 Smoke test on a real DB done (covered by 1.5 — reference the run)
+- [x] 5.1 All task checkboxes above are `[x]`
+- [x] 5.2 `npm run verify` passes
+- [x] 5.3 Smoke test on a real DB done (covered by 1.5 — reference the run)
 - [x] 5.4 Playwright e2e: full `nx e2e web-e2e` suite green as the S-08
       regression proof (no new UI behavior; add specs only for 3.1 fixes
       that changed testable UI behavior)
-- [ ] 5.5 Adversarial review by `slice-reviewer` (ADR-0010): freeze the
+- [x] 5.5 Adversarial review by `slice-reviewer` (ADR-0010): freeze the
       range at an explicit end SHA, one pass over the slice diff;
       critical/high fixed + re-verify; medium/low dispositions logged
 - [x] 5.6 Launch-and-look: run the app locally, walk the slice happy path
