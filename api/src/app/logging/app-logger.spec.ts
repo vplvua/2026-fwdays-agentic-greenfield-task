@@ -29,4 +29,26 @@ describe('createAppLogger', () => {
       write.mockRestore();
     }
   });
+
+  it('spreads plain-object messages into top-level envelope fields', () => {
+    // Railway drops object-valued `message` — fields must live at the top
+    // level of the JSON line to survive as queryable attributes.
+    const logger = createAppLogger({ NODE_ENV: 'production' });
+    const write = jest
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
+    try {
+      logger?.log({ message: 'GET /x 200 1ms', statusCode: 200 }, 'http');
+      const entry = JSON.parse(write.mock.calls[0][0] as string);
+      expect(entry).toMatchObject({
+        level: 'log',
+        context: 'http',
+        message: 'GET /x 200 1ms',
+        statusCode: 200,
+      });
+      expect(typeof entry.message).toBe('string');
+    } finally {
+      write.mockRestore();
+    }
+  });
 });

@@ -19,7 +19,9 @@ export function createRequestLogger(
       const durationMs = Math.round(performance.now() - startedAt);
       // Allowlist only: req.path without the query string (search q carries
       // user text, FR-LIST-03) and never bodies or tokens (NFR-SEC-01).
+      // `message` repeats the fields for Railway's human-readable column.
       logger.log({
+        message: `${req.method} ${req.path} ${res.statusCode} ${durationMs}ms`,
         method: req.method,
         path: req.path,
         statusCode: res.statusCode,

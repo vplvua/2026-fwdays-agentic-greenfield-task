@@ -39,9 +39,10 @@ describe('createRequestLogger', () => {
     (res as unknown as EventEmitter).emit('finish');
     expect(log).toHaveBeenCalledTimes(1);
     const entry = log.mock.calls[0][0];
-    // Exact allowlist (design D4): nothing beyond these four fields may leak.
+    // Exact allowlist (design D4): nothing beyond these fields may leak.
     expect(Object.keys(entry).sort()).toEqual([
       'durationMs',
+      'message',
       'method',
       'path',
       'statusCode',
@@ -52,6 +53,7 @@ describe('createRequestLogger', () => {
       statusCode: 200,
     });
     expect(entry.durationMs).toBeGreaterThanOrEqual(0);
+    expect(entry.message).toMatch(/^GET \/api\/tickets 200 \d+ms$/);
   });
 
   it('never logs the query string (search text may contain names)', () => {
