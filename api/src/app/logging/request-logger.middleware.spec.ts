@@ -102,7 +102,8 @@ describe('createRequestLogger', () => {
   });
 
   it('skips SPA page and asset requests entirely', () => {
-    for (const url of ['/', '/tickets/5', '/main-ABCDEF.js']) {
+    // '/api-foo' is the near-miss prefix case (review S-08 #4)
+    for (const url of ['/', '/tickets/5', '/main-ABCDEF.js', '/api-foo']) {
       const req = makeReq('GET', url);
       const res = makeRes(200);
       const next = jest.fn();

@@ -57,8 +57,10 @@ failed request.
 Log entries SHALL NOT contain full phone numbers, OTP codes, session or
 cookie token values, request/response bodies, or user-entered free text
 (NFR-SEC-01, NFR-OBS-01). Phone numbers appear only masked. Exception fixed
-by ADR-0004: the dev SMS sender logs the OTP code as the designed fallback
-and SHALL remain unselectable when `NODE_ENV=production`.
+by ADR-0004: the dev SMS sender logs the full phone and the OTP code as the
+designed non-production fallback (its whole purpose is showing the developer
+which code went to which number) and SHALL remain unselectable when
+`NODE_ENV=production`.
 
 #### Scenario: OTP send is logged without phone or code
 
@@ -77,8 +79,14 @@ and SHALL remain unselectable when `NODE_ENV=production`.
 
 The API SHALL log each OTP SMS send attempt outcome (success or failure,
 with provider error details on failure) as a structured entry with at most a
-masked phone (NFR-OBS-01). This fixes the behavior shipped in S-02 as a
-spec-level requirement.
+masked phone (NFR-OBS-01). The failure logging fixes behavior shipped in
+S-02 as a spec-level requirement; success logging is added by this slice.
+
+#### Scenario: Successful send is logged with a masked phone
+
+- **WHEN** TurboSMS accepts an OTP SMS send
+- **THEN** a log entry is emitted containing at most the masked phone and
+  never the OTP code
 
 #### Scenario: Failed provider send is diagnosable
 

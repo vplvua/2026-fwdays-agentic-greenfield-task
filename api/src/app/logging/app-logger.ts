@@ -20,7 +20,17 @@ class JsonConsoleLogger extends ConsoleLogger {
       typeof message === 'object' &&
       message.constructor === Object
     ) {
-      return { ...base, message: '', ...message };
+      // Envelope fields always win — a payload key like `level` or
+      // `timestamp` must not be able to forge the envelope (review S-08 #1).
+      const { message: text, ...fields } = message as Record<string, unknown>;
+      for (const key of ['level', 'pid', 'timestamp', 'context', 'stack']) {
+        delete fields[key];
+      }
+      return {
+        ...base,
+        ...fields,
+        message: typeof text === 'string' ? text : '',
+      };
     }
     return base;
   }

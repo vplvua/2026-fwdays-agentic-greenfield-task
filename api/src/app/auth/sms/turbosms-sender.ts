@@ -60,5 +60,7 @@ export class TurboSmsSender implements SmsSender {
       );
       throw new Error('TurboSMS send failed');
     }
+    // Success is logged too — NFR-OBS-01 lists OTP sends, not just failures
+    this.logger.log(`sent to ${maskPhone(phone)}`);
   }
 }

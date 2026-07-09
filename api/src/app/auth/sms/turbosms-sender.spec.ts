@@ -33,6 +33,28 @@ describe('TurboSmsSender', () => {
     expect(payload.sms.text).toContain('123456');
   });
 
+  it('logs the successful send outcome with a masked phone only', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      jsonResponse(200, {
+        response_code: 800,
+        response_status: 'SUCCESS_MESSAGE_ACCEPTED',
+      }),
+    );
+    const sender = new TurboSmsSender(config, fetchMock);
+    const log = jest.spyOn(
+      (sender as unknown as { logger: { log: (m: string) => void } }).logger,
+      'log',
+    );
+
+    await sender.send('+380671234567', '123456');
+
+    expect(log).toHaveBeenCalledTimes(1);
+    const line = log.mock.calls[0][0];
+    expect(line).toContain('+380*****67');
+    expect(line).not.toContain('380671234567');
+    expect(line).not.toContain('123456');
+  });
+
   it('throws on a non-success TurboSMS response', async () => {
     const fetchMock = jest.fn().mockResolvedValue(
       jsonResponse(200, {

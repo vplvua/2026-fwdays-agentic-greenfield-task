@@ -51,4 +51,27 @@ describe('createAppLogger', () => {
       write.mockRestore();
     }
   });
+
+  it('never lets payload keys forge envelope fields (review S-08 #1)', () => {
+    const logger = createAppLogger({ NODE_ENV: 'production' });
+    const write = jest
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
+    try {
+      logger?.log(
+        { level: 'fatal', pid: 0, timestamp: 1, context: 'X', ok: true },
+        'http',
+      );
+      const entry = JSON.parse(write.mock.calls[0][0] as string);
+      expect(entry.level).toBe('log');
+      expect(entry.context).toBe('http');
+      expect(entry.pid).not.toBe(0);
+      expect(entry.timestamp).not.toBe(1);
+      expect(entry.ok).toBe(true);
+      // No message key in the payload → empty string, not undefined
+      expect(entry.message).toBe('');
+    } finally {
+      write.mockRestore();
+    }
+  });
 });

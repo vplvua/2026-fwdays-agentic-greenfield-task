@@ -13,7 +13,8 @@ export function createRequestLogger(
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req, res, next) => {
     // SPA page and asset requests are noise; log only the API surface.
-    if (!req.path.startsWith('/api')) {
+    // Exact-segment check: '/api-foo' must not match (review S-08 #4).
+    if (req.path !== '/api' && !req.path.startsWith('/api/')) {
       next();
       return;
     }
