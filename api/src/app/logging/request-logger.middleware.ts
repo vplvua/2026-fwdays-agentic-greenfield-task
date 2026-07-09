@@ -4,8 +4,11 @@ import type { NextFunction, Request, Response } from 'express';
 // One structured entry per API request (NFR-OBS-01), emitted on response
 // 'finish' so the final status code is known. Plain Express middleware, not
 // a Nest interceptor — interceptors never fire for guard rejections (401)
-// or route misses (404), and those must be visible too.
+// or route misses (404), and those must be visible too. `structured` adds
+// the per-field payload for the JSON logger; the dev pretty logger gets a
+// compact one-line string instead of a multi-line inspected object.
 export function createRequestLogger(
+  structured: boolean,
   logger: Pick<Logger, 'log'> = new Logger('http'),
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req, res, next) => {
@@ -20,13 +23,18 @@ export function createRequestLogger(
       // Allowlist only: req.path without the query string (search q carries
       // user text, FR-LIST-03) and never bodies or tokens (NFR-SEC-01).
       // `message` repeats the fields for Railway's human-readable column.
-      logger.log({
-        message: `${req.method} ${req.path} ${res.statusCode} ${durationMs}ms`,
-        method: req.method,
-        path: req.path,
-        statusCode: res.statusCode,
-        durationMs,
-      });
+      const message = `${req.method} ${req.path} ${res.statusCode} ${durationMs}ms`;
+      logger.log(
+        structured
+          ? {
+              message,
+              method: req.method,
+              path: req.path,
+              statusCode: res.statusCode,
+              durationMs,
+            }
+          : message,
+      );
     });
     next();
   };

@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: createAppLogger(process.env),
   });
-  app.use(createRequestLogger());
+  app.use(createRequestLogger(process.env.NODE_ENV === 'production'));
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
   // Graceful Prisma disconnect on SIGTERM/SIGINT (container stop on Railway)

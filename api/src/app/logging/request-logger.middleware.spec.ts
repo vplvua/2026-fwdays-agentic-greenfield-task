@@ -24,7 +24,7 @@ describe('createRequestLogger', () => {
 
   beforeEach(() => {
     log = jest.fn();
-    middleware = createRequestLogger({ log });
+    middleware = createRequestLogger(true, { log });
   });
 
   it('logs exactly the allowlisted fields once the response finishes', () => {
@@ -87,6 +87,18 @@ describe('createRequestLogger', () => {
       path: '/api/no-such-route',
       statusCode: 404,
     });
+  });
+
+  it('logs a compact one-line string in unstructured (dev) mode', () => {
+    const devMiddleware = createRequestLogger(false, { log });
+    const res = makeRes(200);
+
+    devMiddleware(makeReq('GET', '/api/tickets?q=Іваненко'), res, jest.fn());
+    (res as unknown as EventEmitter).emit('finish');
+
+    const entry = log.mock.calls[0][0];
+    expect(typeof entry).toBe('string');
+    expect(entry).toMatch(/^GET \/api\/tickets 200 \d+ms$/);
   });
 
   it('skips SPA page and asset requests entirely', () => {
