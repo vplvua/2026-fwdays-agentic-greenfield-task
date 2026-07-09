@@ -66,9 +66,9 @@
       critical/high fixed + re-verify; medium/low dispositions logged
 - [x] 5.6 Launch-and-look: run the app locally, walk the slice happy path
       (request logs appear, app unchanged for the user)
-- [ ] 5.7 `npx openspec validate poc-polish-observability --strict` pass;
+- [x] 5.7 `npx openspec validate poc-polish-observability --strict` pass;
       archive the change; `npx openspec list` empty; prettier over synced
       `openspec/specs/**/*.md`
-- [ ] 5.8 Update `docs/current-state.md` (phase: POC closed; done / next /
+- [x] 5.8 Update `docs/current-state.md` (phase: POC closed; done / next /
       blockers)
 - [ ] 5.9 Session retrospective via `/slice-retro` → `docs/cycles/S-08.md`
