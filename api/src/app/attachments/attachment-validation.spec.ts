@@ -115,8 +115,8 @@ describe('normalizeFileName', () => {
   });
 
   it('strips path components from crafted names', () => {
-    expect(normalizeFileName('../../etc/passwd.png', 'image/png')).toBe(
-      'passwd.png',
+    expect(normalizeFileName('../../etc/hosts.png', 'image/png')).toBe(
+      'hosts.png',
     );
     expect(normalizeFileName('C:\\Users\\evil.webp', 'image/webp')).toBe(
       'evil.webp',

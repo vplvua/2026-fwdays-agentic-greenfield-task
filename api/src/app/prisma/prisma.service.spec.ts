@@ -16,11 +16,11 @@ describe('poolConfigFromUrl', () => {
   });
 
   it('defaults the port and decodes escaped credentials', () => {
-    const config = poolConfigFromUrl('mysql://user:p%40ss@localhost/app');
+    const config = poolConfigFromUrl('mysql://user:a%40b@localhost/app');
     expect(config).toMatchObject({
       host: 'localhost',
       port: 3306,
-      password: 'p@ss',
+      password: 'a@b',
       database: 'app',
     });
   });
